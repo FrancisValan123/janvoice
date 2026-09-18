@@ -1,0 +1,417 @@
+/* ================================
+   JANVOICE REGISTER PAGE STYLES
+   ================================ */
+
+.register-container {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.register-branding {
+  flex: 1;
+  background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFC107 100%);
+  color: white;
+  padding: 60px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-branding::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  top: -100px;
+  right: -100px;
+}
+
+.register-branding::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  bottom: -80px;
+  left: -80px;
+}
+
+.branding-content {
+  position: relative;
+  z-index: 2;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 50px;
+}
+
+.logo-icon {
+  font-size: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 70px;
+  height: 70px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.logo-text {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.branding-title {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  letter-spacing: -1px;
+}
+
+.branding-description {
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.95;
+  max-width: 450px;
+}
+
+.branding-footer {
+  position: relative;
+  z-index: 2;
+  font-size: 13px;
+  opacity: 0.85;
+  text-align: center;
+}
+
+/* ================================
+   RIGHT SIDE - REGISTER FORM
+   ================================ */
+
+.register-form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: #ffffff;
+  overflow-y: auto;
+}
+
+.register-form-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.form-header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 8px;
+}
+
+.form-header p {
+  color: #718096;
+  font-size: 14px;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+}
+
+.input-wrapper.error {
+  border-color: #fc8181;
+}
+
+.input-icon {
+  padding: 0 12px 0 15px;
+  font-size: 16px;
+}
+
+.input-wrapper input {
+  flex: 1;
+  padding: 13px 12px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #1a202c;
+  outline: none;
+}
+
+.toggle-password {
+  background: none;
+  border: none;
+  padding: 0 15px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.error-message {
+  font-size: 12px;
+  color: #e53e3e;
+  font-weight: 500;
+  padding-left: 4px;
+}
+
+/* ================================
+   ROLE TABS
+   ================================ */
+
+.role-tabs {
+  display: flex;
+  gap: 8px;
+  background: #f7fafc;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.role-tab {
+  flex: 1;
+  padding: 11px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-tab.active {
+  background: linear-gradient(135deg, #FF6B35, #F7931E);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* ================================
+   CHECKBOX
+   ================================ */
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  color: #4a5568;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #FF6B35;
+  flex-shrink: 0;
+}
+
+.inline-link {
+  color: #FF6B35;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.inline-link:hover {
+  text-decoration: underline;
+}
+
+/* ================================
+   SUBMIT BUTTON
+   ================================ */
+
+.btn-submit {
+  background: linear-gradient(135deg, #FF6B35, #F7931E);
+  color: white;
+  border: none;
+  padding: 15px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+}
+
+.btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-submit .arrow {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.btn-submit:hover:not(:disabled) .arrow {
+  transform: translateX(5px);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================================
+   ALERT
+   ================================ */
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.alert-error {
+  background: #fff5f5;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+
+.alert-icon {
+  font-size: 16px;
+}
+
+.alert-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #c53030;
+  cursor: pointer;
+}
+
+/* ================================
+   LOGIN LINK
+   ================================ */
+
+.login-section {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.login-section p {
+  font-size: 14px;
+  color: #718096;
+}
+
+.login-link {
+  color: #FF6B35;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 768px) {
+  .register-container {
+    flex-direction: column;
+  }
+
+  .register-branding {
+    padding: 40px 25px;
+    min-height: auto;
+  }
+
+  .branding-title {
+    font-size: 30px;
+  }
+
+  .register-form-section {
+    padding: 30px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .branding-title {
+    font-size: 26px;
+  }
+
+  .register-form-section {
+    padding: 25px 15px;
+  }
+
+  .form-header h2 {
+    font-size: 24px;
+  }
+}

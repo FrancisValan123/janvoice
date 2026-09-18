@@ -1,113 +1,102 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import './Login.css';
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import './Login.css'
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     role: 'citizen',
     rememberMe: false
-  });
+  })
 
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const [errors, setErrors] = useState({})
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [serverError, setServerError] = useState('')
 
-  // Handle input changes
+  useEffect(() => {
+    const remembered = localStorage.getItem('janvoice_remember')
+    if (remembered) {
+      setFormData((prev) => ({ ...prev, email: remembered, rememberMe: true }))
+    }
+  }, [])
+
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
-    });
-    // Clear error for this field
+    })
     if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
+      setErrors({ ...errors, [name]: '' })
     }
-    setServerError('');
-  };
+    setServerError('')
+  }
 
-  // Validate form
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = {}
 
-    // Email validation
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email is required'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Please enter a valid email'
     }
 
-    // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Password is required'
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'Password must be at least 6 characters'
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
-  // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setServerError('');
+    e.preventDefault()
+    setServerError('')
 
-    if (!validateForm()) return;
+    if (!validateForm()) return
 
-    setLoading(true);
+    setLoading(true)
 
     try {
-      // Call login API
       const result = await login({
         email: formData.email,
         password: formData.password,
         role: formData.role
-      });
+      })
 
       if (result.success) {
-        // Save remember me preference
         if (formData.rememberMe) {
-          localStorage.setItem('janvoice_remember', formData.email);
+          localStorage.setItem('janvoice_remember', formData.email)
         }
 
-        // Redirect based on role
         const roleRoutes = {
           citizen: '/citizen/dashboard',
           officer: '/officer/dashboard',
           department_admin: '/department/dashboard',
           higher_authority: '/authority/dashboard',
           system_admin: '/admin/dashboard'
-        };
+        }
 
-        navigate(roleRoutes[formData.role] || '/dashboard');
+        navigate(roleRoutes[formData.role] || '/dashboard')
       } else {
-        setServerError(result.message || 'Invalid credentials');
+        setServerError(result.message || 'Invalid credentials')
       }
     } catch (error) {
       setServerError(
-        error.response?.data?.message || 
-        'Login failed. Please try again.'
-      );
+        error.response?.data?.message || 'Login failed. Please try again.'
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-
-  // Load remembered email
-  React.useEffect(() => {
-    const remembered = localStorage.getItem('janvoice_remember');
-    if (remembered) {
-      setFormData(prev => ({ ...prev, email: remembered, rememberMe: true }));
-    }
-  }, []);
+  }
 
   return (
     <div className="login-container">
@@ -123,10 +112,10 @@ const Login = () => {
             Our Action
           </h2>
           <p className="branding-description">
-            National Public Complaint & Action Platform. 
-            Report civic issues, track resolutions, and build a better India together.
+            National Public Complaint & Action Platform. Report civic issues,
+            track resolutions, and build a better India together.
           </p>
-          
+
           <div className="feature-list">
             <div className="feature-item">
               <span className="feature-icon">📢</span>
@@ -151,7 +140,7 @@ const Login = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="branding-footer">
           <p>© 2026 JanVoice | Government of India Initiative</p>
         </div>
@@ -160,7 +149,6 @@ const Login = () => {
       {/* Right Side - Login Form */}
       <div className="login-form-section">
         <div className="login-form-container">
-          
           <div className="form-header">
             <h2>Welcome Back 👋</h2>
             <p>Login to your JanVoice account</p>
@@ -196,7 +184,7 @@ const Login = () => {
             <div className="alert alert-error">
               <span className="alert-icon">⚠️</span>
               <span>{serverError}</span>
-              <button 
+              <button
                 className="alert-close"
                 onClick={() => setServerError('')}
               >
@@ -207,8 +195,6 @@ const Login = () => {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="login-form" noValidate>
-            
-            {/* Email Field */}
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
               <div className={`input-wrapper ${errors.email ? 'error' : ''}`}>
@@ -224,12 +210,9 @@ const Login = () => {
                   disabled={loading}
                 />
               </div>
-              {errors.email && (
-                <span className="error-message">{errors.email}</span>
-              )}
+              {errors.email && <span className="error-message">{errors.email}</span>}
             </div>
 
-            {/* Password Field */}
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <div className={`input-wrapper ${errors.password ? 'error' : ''}`}>
@@ -253,12 +236,9 @@ const Login = () => {
                   {showPassword ? '👁️' : '👁️‍🗨️'}
                 </button>
               </div>
-              {errors.password && (
-                <span className="error-message">{errors.password}</span>
-              )}
+              {errors.password && <span className="error-message">{errors.password}</span>}
             </div>
 
-            {/* Remember Me & Forgot Password */}
             <div className="form-options">
               <label className="checkbox-label">
                 <input
@@ -268,7 +248,6 @@ const Login = () => {
                   onChange={handleChange}
                   disabled={loading}
                 />
-                <span className="checkmark"></span>
                 <span>Remember me</span>
               </label>
               <Link to="/forgot-password" className="forgot-link">
@@ -276,12 +255,7 @@ const Login = () => {
               </Link>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="btn-submit"
-              disabled={loading}
-            >
+            <button type="submit" className="btn-submit" disabled={loading}>
               {loading ? (
                 <>
                   <span className="spinner"></span>
@@ -296,12 +270,10 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Divider */}
           <div className="divider">
             <span>OR</span>
           </div>
 
-          {/* Register Link */}
           <div className="register-section">
             <p>Don't have an account?</p>
             <Link to="/register" className="btn-register">
@@ -309,17 +281,15 @@ const Login = () => {
             </Link>
           </div>
 
-          {/* Quick Help */}
           <div className="help-section">
             <p>
-              🆘 Need help?{' '}
-              <a href="tel:1800-XXX-XXXX">Call 1800-XXX-XXXX</a>
+              🆘 Need help? <a href="tel:1800-XXX-XXXX">Call 1800-XXX-XXXX</a>
             </p>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Login;
+export default Login

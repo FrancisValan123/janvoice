@@ -1,111 +1,100 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import authService from '../services/authService';
+import React, { createContext, useState, useContext, useEffect } from 'react'
+import authService from '../services/authService'
 
-const AuthContext = createContext(null);
+const AuthContext = createContext(null)
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider')
   }
-  return context;
-};
+  return context
+}
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [token, setToken] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  // Load user from localStorage on mount
   useEffect(() => {
-    const savedToken = localStorage.getItem('janvoice_token');
-    const savedUser = localStorage.getItem('janvoice_user');
+    const savedToken = localStorage.getItem('janvoice_token')
+    const savedUser = localStorage.getItem('janvoice_user')
 
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      setToken(savedToken)
+      setUser(JSON.parse(savedUser))
     }
-    setLoading(false);
-  }, []);
+    setLoading(false)
+  }, [])
 
-  // Login function
   const login = async (credentials) => {
     try {
-      const response = await authService.login(credentials);
+      // Mock login for demo (replace with real API call)
+      // const response = await authService.login(credentials)
       
-      if (response.data.success) {
-        const { token, user } = response.data;
-        
-        // Save to state
-        setToken(token);
-        setUser(user);
-        
-        // Save to localStorage
-        localStorage.setItem('janvoice_token', token);
-        localStorage.setItem('janvoice_user', JSON.stringify(user));
-        
-        return { success: true, user };
+      // DEMO MODE - Remove this block when backend is ready
+      const mockUser = {
+        id: '1',
+        name: credentials.email.split('@')[0],
+        email: credentials.email,
+        role: credentials.role || 'citizen'
       }
+      const mockToken = 'demo_token_' + Date.now()
       
-      return { 
-        success: false, 
-        message: response.data.message || 'Login failed' 
-      };
+      setToken(mockToken)
+      setUser(mockUser)
+      localStorage.setItem('janvoice_token', mockToken)
+      localStorage.setItem('janvoice_user', JSON.stringify(mockUser))
+      
+      return { success: true, user: mockUser }
     } catch (error) {
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed. Please try again.'
-      };
+      }
     }
-  };
+  }
 
-  // Register function
   const register = async (userData) => {
     try {
-      const response = await authService.register(userData);
-      
-      if (response.data.success) {
-        const { token, user } = response.data;
-        
-        setToken(token);
-        setUser(user);
-        
-        localStorage.setItem('janvoice_token', token);
-        localStorage.setItem('janvoice_user', JSON.stringify(user));
-        
-        return { success: true, user };
+      // Mock register for demo
+      const mockUser = {
+        id: '1',
+        name: userData.name,
+        email: userData.email,
+        role: userData.role || 'citizen'
       }
+      const mockToken = 'demo_token_' + Date.now()
       
-      return { 
-        success: false, 
-        message: response.data.message || 'Registration failed' 
-      };
+      setToken(mockToken)
+      setUser(mockUser)
+      localStorage.setItem('janvoice_token', mockToken)
+      localStorage.setItem('janvoice_user', JSON.stringify(mockUser))
+      
+      return { success: true, user: mockUser }
     } catch (error) {
       return {
         success: false,
         message: error.response?.data?.message || 'Registration failed.'
-      };
+      }
     }
-  };
+  }
 
-  // Logout function
   const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('janvoice_token');
-    localStorage.removeItem('janvoice_user');
-    localStorage.removeItem('janvoice_remember');
-  };
+    setUser(null)
+    setToken(null)
+    localStorage.removeItem('janvoice_token')
+    localStorage.removeItem('janvoice_user')
+    localStorage.removeItem('janvoice_remember')
+  }
 
-  // Check if user is authenticated
   const isAuthenticated = () => {
-    return !!token && !!user;
-  };
+    return !!token && !!user
+  }
 
-  // Check if user has specific role
   const hasRole = (role) => {
-    return user?.role === role;
-  };
+    return user?.role === role
+  }
 
   const value = {
     user,
@@ -116,13 +105,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated,
     hasRole
-  };
+  }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
 
-export default AuthContext;
+export default AuthContext
