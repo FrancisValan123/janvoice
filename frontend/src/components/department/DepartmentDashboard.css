@@ -1,0 +1,31 @@
+.dept-banner {
+  background: linear-gradient(135deg, #553C9A, #805AD5);
+  box-shadow: 0 8px 24px rgba(128, 90, 213, 0.25);
+  padding: 32px;
+  border-radius: 16px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.welcome-text h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+.welcome-text p { font-size: 15px; opacity: 0.95; }
+
+.btn-primary-large {
+  background: white;
+  color: #553C9A;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}

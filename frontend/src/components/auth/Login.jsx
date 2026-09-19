@@ -98,6 +98,14 @@ const Login = () => {
     }
   }
 
+  const roles = [
+    { id: 'citizen', label: 'Citizen', icon: '👤' },
+    { id: 'officer', label: 'Officer', icon: '👨‍💼' },
+    { id: 'department_admin', label: 'Dept Admin', icon: '🏛️' },
+    { id: 'higher_authority', label: 'Authority', icon: '⭐' },
+    { id: 'system_admin', label: 'Admin', icon: '⚙️' }
+  ]
+
   return (
     <div className="login-container">
       {/* Left Side - Branding */}
@@ -154,29 +162,20 @@ const Login = () => {
             <p>Login to your JanVoice account</p>
           </div>
 
-          {/* Role Selection Tabs */}
-          <div className="role-tabs">
-            <button
-              type="button"
-              className={`role-tab ${formData.role === 'citizen' ? 'active' : ''}`}
-              onClick={() => setFormData({ ...formData, role: 'citizen' })}
-            >
-              👤 Citizen
-            </button>
-            <button
-              type="button"
-              className={`role-tab ${formData.role === 'officer' ? 'active' : ''}`}
-              onClick={() => setFormData({ ...formData, role: 'officer' })}
-            >
-              👨‍💼 Officer
-            </button>
-            <button
-              type="button"
-              className={`role-tab ${formData.role === 'system_admin' ? 'active' : ''}`}
-              onClick={() => setFormData({ ...formData, role: 'system_admin' })}
-            >
-              ⚙️ Admin
-            </button>
+          {/* Role Selection Tabs - ALL 5 ROLES */}
+          <div className="role-tabs role-tabs-five">
+            {roles.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                className={`role-tab ${formData.role === r.id ? 'active' : ''}`}
+                onClick={() => setFormData({ ...formData, role: r.id })}
+                title={r.label}
+              >
+                <span className="role-tab-icon">{r.icon}</span>
+                <span className="role-tab-label">{r.label}</span>
+              </button>
+            ))}
           </div>
 
           {/* Server Error Alert */}

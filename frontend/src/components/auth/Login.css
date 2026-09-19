@@ -635,3 +635,58 @@
     gap: 10px;
   }
 }
+/* ================================
+   FIVE ROLE TABS LAYOUT
+   ================================ */
+
+.role-tabs-five {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 6px;
+}
+
+.role-tabs-five .role-tab {
+  padding: 10px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.role-tab-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.role-tab-label {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 500px) {
+  .role-tabs-five {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .role-tabs-five .role-tab:nth-child(4),
+  .role-tabs-five .role-tab:nth-child(5) {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 380px) {
+  .role-tabs-five .role-tab-label {
+    font-size: 9px;
+  }
+
+  .role-tab-icon {
+    font-size: 16px;
+  }
+}
