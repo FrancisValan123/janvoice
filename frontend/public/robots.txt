@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /officer/
+Disallow: /department/
+Disallow: /authority/
+
+Sitemap: https://janvoice.gov.in/sitemap.xml

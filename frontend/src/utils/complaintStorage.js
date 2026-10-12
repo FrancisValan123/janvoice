@@ -1,71 +1,181 @@
-// ============================================
-// JANVOICE - Complaint Storage (LocalStorage)
-// ============================================
+/* ===================================
+   JANVOICE — COMPLAINT LOCAL STORAGE
+   =================================== */
 
-const STORAGE_KEY = 'janvoice_complaints'
+import { STORAGE_KEYS } from './constants'
+import { safeJsonParse } from './helpers'
 
-// Save a new complaint
-export const saveComplaint = (complaint) => {
-  const existing = getComplaints()
+const DRAFT_KEY = 'janvoice_complaint_draft'
+const RECENT_KEY = 'janvoice_recent_complaints'
+const FILTERS_KEY = 'janvoice_complaint_filters'
 
-  const newComplaint = {
-    id: `JV${Date.now()}`,
-    complaintNumber: `JV2026${Date.now().toString().slice(-6)}`,
-    title: complaint.title,
-    category: complaint.category,
-    priority: complaint.priority,
-    description: complaint.description,
-    location: complaint.location,
-    affectedPeople: complaint.affectedPeople,
-    evidence: complaint.evidence
-      ? { name: complaint.evidence.name, size: complaint.evidence.size }
-      : null,
-    status: 'Pending',
-    submittedBy: complaint.submittedBy || 'citizen@test.com',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+/**
+ * Save a complaint draft to localStorage
+ * (Used when user is filling a form and navigates away)
+ */
+export const saveDraft = (draft) => {
+  try {
+    const data = {
+      ...draft,
+      savedAt: new Date().toISOString()
+    }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
+    return true
+  } catch (err) {
+    console.error('Failed to save draft:', err)
+    return false
   }
-
-  existing.push(newComplaint)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing))
-
-  console.log('✅ Complaint saved:', newComplaint)
-  return newComplaint
 }
 
-// Get all complaints
-export const getComplaints = () => {
-  const data = localStorage.getItem(STORAGE_KEY)
-  return data ? JSON.parse(data) : []
+/**
+ * Load a saved draft
+ */
+export const loadDraft = () => {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    return safeJsonParse(raw)
+  } catch (err) {
+    console.error('Failed to load draft:', err)
+    return null
+  }
 }
 
-// Get complaints for a specific user
-export const getUserComplaints = (email) => {
-  return getComplaints().filter((c) => c.submittedBy === email)
+/**
+ * Clear the saved draft
+ */
+export const clearDraft = () => {
+  try {
+    localStorage.removeItem(DRAFT_KEY)
+    return true
+  } catch (err) {
+    console.error('Failed to clear draft:', err)
+    return false
+  }
 }
 
-// Get a single complaint by ID
-export const getComplaintById = (id) => {
-  return getComplaints().find((c) => c.id === id || c.complaintNumber === id)
+/**
+ * Check if a draft exists
+ */
+export const hasDraft = () => {
+  return localStorage.getItem(DRAFT_KEY) !== null
 }
 
-// Update complaint status
-export const updateComplaintStatus = (id, status) => {
-  const complaints = getComplaints()
-  const updated = complaints.map((c) =>
-    c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c
-  )
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+/**
+ * Get the age of the current draft in hours
+ */
+export const getDraftAge = () => {
+  const draft = loadDraft()
+  if (!draft?.savedAt) return null
+  const saved = new Date(draft.savedAt)
+  const hours = (Date.now() - saved.getTime()) / (1000 * 60 * 60)
+  return Math.round(hours * 10) / 10
 }
 
-// Delete a complaint (for testing)
-export const deleteComplaint = (id) => {
-  const complaints = getComplaints()
-  const filtered = complaints.filter((c) => c.id !== id)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
+/**
+ * Save recently viewed complaints
+ * (For quick access, max 10)
+ */
+export const addRecentComplaint = (complaint) => {
+  try {
+    const list = getRecentComplaints()
+    const filtered = list.filter((c) => c.id !== complaint.id)
+    const updated = [
+      {
+        id: complaint.id || complaint._id,
+        title: complaint.title,
+        status: complaint.status,
+        priority: complaint.priority,
+        viewedAt: new Date().toISOString()
+      },
+      ...filtered
+    ].slice(0, 10)
+
+    localStorage.setItem(RECENT_KEY, JSON.stringify(updated))
+    return true
+  } catch (err) {
+    console.error('Failed to save recent:', err)
+    return false
+  }
 }
 
-// Clear all (for testing)
-export const clearAllComplaints = () => {
-  localStorage.removeItem(STORAGE_KEY)
+/**
+ * Get recently viewed complaints
+ */
+export const getRecentComplaints = () => {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY)
+    return safeJsonParse(raw, [])
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Clear recent complaints
+ */
+export const clearRecentComplaints = () => {
+  try {
+    localStorage.removeItem(RECENT_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Save complaint list filters
+ */
+export const saveFilters = (filters) => {
+  try {
+    localStorage.setItem(FILTERS_KEY, JSON.stringify(filters))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Load saved filters
+ */
+export const loadFilters = () => {
+  try {
+    const raw = localStorage.getItem(FILTERS_KEY)
+    return safeJsonParse(raw, {})
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Clear saved filters
+ */
+export const clearFilters = () => {
+  try {
+    localStorage.removeItem(FILTERS_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Clear ALL complaint-related local storage
+ */
+export const clearAllComplaintStorage = () => {
+  try {
+    localStorage.removeItem(DRAFT_KEY)
+    localStorage.removeItem(RECENT_KEY)
+    localStorage.removeItem(FILTERS_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Export keys for external use
+export const STORAGE_KEYS_LIST = {
+  DRAFT: DRAFT_KEY,
+  RECENT: RECENT_KEY,
+  FILTERS: FILTERS_KEY
 }

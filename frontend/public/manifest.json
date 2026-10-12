@@ -1,0 +1,20 @@
+{
+  "name": "JanVoice - National Public Complaint & Action Platform",
+  "short_name": "JanVoice",
+  "description": "Report civic issues, track resolutions, and build a better India together.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#FF6B35",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

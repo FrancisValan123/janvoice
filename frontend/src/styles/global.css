@@ -1,0 +1,818 @@
+/* ===================================
+   TAILWIND CSS v4
+   =================================== */
+@import 'tailwindcss';
+
+/* ===================================
+   JANVOICE — GLOBAL STYLES
+   =================================== */
+
+/* ===================================
+   1. CSS VARIABLES (Design Tokens)
+   =================================== */
+:root {
+  /* Brand Colors */
+  --jv-primary: #FF6B35;
+  --jv-primary-dark: #E55A2B;
+  --jv-primary-light: #FF8A5B;
+  --jv-secondary: #F7931E;
+  --jv-accent: #FFC107;
+
+  /* Semantic Colors */
+  --jv-success: #38A169;
+  --jv-success-light: #48BB78;
+  --jv-warning: #ED8936;
+  --jv-warning-light: #F6AD55;
+  --jv-danger: #E53E3E;
+  --jv-danger-light: #FC8181;
+  --jv-info: #4299E1;
+  --jv-info-light: #63B3ED;
+  --jv-purple: #805AD5;
+  --jv-purple-light: #B794F4;
+
+  /* Neutrals */
+  --jv-dark: #1a202c;
+  --jv-gray-800: #2d3748;
+  --jv-gray-700: #4a5568;
+  --jv-gray-600: #718096;
+  --jv-gray-500: #a0aec0;
+  --jv-gray-400: #cbd5e0;
+  --jv-gray-300: #e2e8f0;
+  --jv-gray-200: #edf2f7;
+  --jv-gray-100: #f7fafc;
+  --jv-white: #ffffff;
+
+  /* Backgrounds */
+  --jv-bg: #f5f7fa;
+  --jv-bg-card: #ffffff;
+  --jv-bg-sidebar: linear-gradient(180deg, #1a202c 0%, #2d3748 100%);
+  --jv-bg-welcome: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+
+  /* Spacing */
+  --jv-space-xs: 4px;
+  --jv-space-sm: 8px;
+  --jv-space-md: 16px;
+  --jv-space-lg: 24px;
+  --jv-space-xl: 32px;
+  --jv-space-2xl: 48px;
+
+  /* Border Radius */
+  --jv-radius-sm: 6px;
+  --jv-radius-md: 10px;
+  --jv-radius-lg: 14px;
+  --jv-radius-xl: 20px;
+  --jv-radius-full: 9999px;
+
+  /* Shadows */
+  --jv-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --jv-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --jv-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --jv-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --jv-shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.15);
+
+  /* Transitions */
+  --jv-transition: all 0.25s ease;
+  --jv-transition-slow: all 0.4s ease;
+  --jv-transition-fast: all 0.15s ease;
+
+  /* Z-index Scale */
+  --jv-z-dropdown: 100;
+  --jv-z-sticky: 50;
+  --jv-z-modal: 1000;
+  --jv-z-toast: 9999;
+
+  /* Layout */
+  --jv-sidebar-width: 260px;
+  --jv-sidebar-width-collapsed: 80px;
+  --jv-topbar-height: 64px;
+}
+
+/* ===================================
+   2. RESET & BASE
+   =================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--jv-bg);
+  color: var(--jv-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ===================================
+   3. TYPOGRAPHY
+   =================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--jv-dark);
+}
+
+h1 { font-size: 28px; }
+h2 { font-size: 24px; }
+h3 { font-size: 20px; }
+h4 { font-size: 18px; }
+h5 { font-size: 16px; }
+h6 { font-size: 14px; }
+
+p {
+  line-height: 1.6;
+  color: var(--jv-gray-600);
+}
+
+small {
+  font-size: 12px;
+}
+
+strong, b {
+  font-weight: 700;
+}
+
+/* ===================================
+   4. LINKS
+   =================================== */
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--jv-primary);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--jv-primary);
+  outline-offset: 2px;
+  border-radius: var(--jv-radius-sm);
+}
+
+/* ===================================
+   5. BUTTONS
+   =================================== */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+  transition: var(--jv-transition);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--jv-primary);
+  outline-offset: 2px;
+  border-radius: var(--jv-radius-sm);
+}
+
+/* ===================================
+   6. FORM ELEMENTS
+   =================================== */
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--jv-gray-500);
+  opacity: 1;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+select {
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none;
+}
+
+/* Remove number input spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Checkbox & Radio */
+input[type='checkbox'],
+input[type='radio'] {
+  cursor: pointer;
+  accent-color: var(--jv-primary);
+}
+
+/* Date & Time */
+input[type='date'],
+input[type='time'] {
+  cursor: pointer;
+}
+
+/* File input */
+input[type='file'] {
+  cursor: pointer;
+}
+
+/* ===================================
+   7. MEDIA
+   =================================== */
+img,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ===================================
+   8. LISTS
+   =================================== */
+ul, ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ===================================
+   9. TABLES
+   =================================== */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+th, td {
+  padding: 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* ===================================
+   10. FOCUS & SELECTION
+   =================================== */
+:focus-visible {
+  outline: 2px solid var(--jv-primary);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+::selection {
+  background: var(--jv-primary);
+  color: white;
+}
+
+::-moz-selection {
+  background: var(--jv-primary);
+  color: white;
+}
+
+/* ===================================
+   11. CUSTOM SCROLLBAR
+   =================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--jv-primary), var(--jv-secondary));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--jv-secondary), var(--jv-primary));
+}
+
+::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--jv-primary) #f1f5f9;
+}
+
+/* ===================================
+   12. UTILITY CLASSES
+   =================================== */
+
+/* Text Colors */
+.text-primary { color: var(--jv-primary) !important; }
+.text-success { color: var(--jv-success) !important; }
+.text-warning { color: var(--jv-warning) !important; }
+.text-danger { color: var(--jv-danger) !important; }
+.text-info { color: var(--jv-info) !important; }
+.text-purple { color: var(--jv-purple) !important; }
+.text-muted { color: var(--jv-gray-600) !important; }
+.text-dark { color: var(--jv-dark) !important; }
+.text-white { color: white !important; }
+
+/* Background Colors */
+.bg-primary { background: var(--jv-primary) !important; }
+.bg-success { background: var(--jv-success) !important; }
+.bg-warning { background: var(--jv-warning) !important; }
+.bg-danger { background: var(--jv-danger) !important; }
+.bg-info { background: var(--jv-info) !important; }
+.bg-light { background: var(--jv-bg) !important; }
+.bg-white { background: white !important; }
+.bg-dark { background: var(--jv-dark) !important; }
+
+/* Display */
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+.d-grid { display: grid !important; }
+.d-inline { display: inline !important; }
+.d-inline-block { display: inline-block !important; }
+.d-inline-flex { display: inline-flex !important; }
+
+/* Flex Utilities */
+.flex-row { flex-direction: row !important; }
+.flex-col { flex-direction: column !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+.flex-nowrap { flex-wrap: nowrap !important; }
+.flex-1 { flex: 1 !important; }
+.items-start { align-items: flex-start !important; }
+.items-center { align-items: center !important; }
+.items-end { align-items: flex-end !important; }
+.justify-start { justify-content: flex-start !important; }
+.justify-center { justify-content: center !important; }
+.justify-between { justify-content: space-between !important; }
+.justify-end { justify-content: flex-end !important; }
+
+/* Gaps */
+.gap-4 { gap: 4px !important; }
+.gap-8 { gap: 8px !important; }
+.gap-12 { gap: 12px !important; }
+.gap-16 { gap: 16px !important; }
+.gap-20 { gap: 20px !important; }
+.gap-24 { gap: 24px !important; }
+
+/* Text Alignment */
+.text-center { text-align: center !important; }
+.text-left { text-align: left !important; }
+.text-right { text-align: right !important; }
+
+/* Text Transform */
+.text-uppercase { text-transform: uppercase !important; }
+.text-lowercase { text-transform: lowercase !important; }
+.text-capitalize { text-transform: capitalize !important; }
+
+/* Font Weight */
+.font-normal { font-weight: 400 !important; }
+.font-medium { font-weight: 500 !important; }
+.font-semibold { font-weight: 600 !important; }
+.font-bold { font-weight: 700 !important; }
+.font-black { font-weight: 800 !important; }
+
+/* Truncate */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  display: box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  display: box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Width */
+.w-full { width: 100% !important; }
+.w-auto { width: auto !important; }
+.w-50 { width: 50% !important; }
+
+/* Height */
+.h-full { height: 100% !important; }
+.h-screen { height: 100vh !important; }
+
+/* Position */
+.relative { position: relative !important; }
+.absolute { position: absolute !important; }
+.fixed { position: fixed !important; }
+.sticky { position: sticky !important; }
+
+/* Overflow */
+.overflow-hidden { overflow: hidden !important; }
+.overflow-auto { overflow: auto !important; }
+
+/* Cursor */
+.cursor-pointer { cursor: pointer !important; }
+.cursor-not-allowed { cursor: not-allowed !important; }
+
+/* Opacity */
+.opacity-0 { opacity: 0 !important; }
+.opacity-50 { opacity: 0.5 !important; }
+.opacity-75 { opacity: 0.75 !important; }
+.opacity-100 { opacity: 1 !important; }
+
+/* Border Radius */
+.rounded-sm { border-radius: var(--jv-radius-sm) !important; }
+.rounded { border-radius: var(--jv-radius-md) !important; }
+.rounded-lg { border-radius: var(--jv-radius-lg) !important; }
+.rounded-xl { border-radius: var(--jv-radius-xl) !important; }
+.rounded-full { border-radius: var(--jv-radius-full) !important; }
+
+/* Shadows */
+.shadow-xs { box-shadow: var(--jv-shadow-xs) !important; }
+.shadow-sm { box-shadow: var(--jv-shadow-sm) !important; }
+.shadow { box-shadow: var(--jv-shadow-md) !important; }
+.shadow-lg { box-shadow: var(--jv-shadow-lg) !important; }
+.shadow-xl { box-shadow: var(--jv-shadow-xl) !important; }
+.shadow-none { box-shadow: none !important; }
+
+/* Margin */
+.m-0 { margin: 0 !important; }
+.mt-8 { margin-top: 8px !important; }
+.mt-16 { margin-top: 16px !important; }
+.mt-24 { margin-top: 24px !important; }
+.mb-8 { margin-bottom: 8px !important; }
+.mb-16 { margin-bottom: 16px !important; }
+.mb-24 { margin-bottom: 24px !important; }
+.ml-auto { margin-left: auto !important; }
+.mr-auto { margin-right: auto !important; }
+.mx-auto { margin-left: auto !important; margin-right: auto !important; }
+
+/* Padding */
+.p-0 { padding: 0 !important; }
+.p-8 { padding: 8px !important; }
+.p-16 { padding: 16px !important; }
+.p-24 { padding: 24px !important; }
+
+/* ===================================
+   13. ANIMATIONS
+   =================================== */
+@keyframes jv-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jv-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jv-slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes jv-slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes jv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes jv-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes jv-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes jv-scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation Classes */
+.animate-fade-in {
+  animation: jv-fadeIn 0.3s ease;
+}
+
+.animate-fade-in-up {
+  animation: jv-fadeInUp 0.4s ease;
+}
+
+.animate-slide-in-right {
+  animation: jv-slideInRight 0.3s ease;
+}
+
+.animate-slide-in-left {
+  animation: jv-slideInLeft 0.3s ease;
+}
+
+.animate-spin {
+  animation: jv-spin 0.8s linear infinite;
+}
+
+.animate-pulse {
+  animation: jv-pulse 2s ease-in-out infinite;
+}
+
+.animate-bounce {
+  animation: jv-bounce 1s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: jv-scaleIn 0.3s ease;
+}
+
+/* ===================================
+   14. LOADING SPINNERS
+   =================================== */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--jv-gray-300);
+  border-top-color: var(--jv-primary);
+  border-radius: 50%;
+  animation: jv-spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+.spinner-xl {
+  width: 48px;
+  height: 48px;
+  border-width: 4px;
+}
+
+/* ===================================
+   15. ACCESSIBILITY
+   =================================== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===================================
+   16. RESPONSIVE
+   =================================== */
+@media (max-width: 1024px) {
+  :root {
+    --jv-sidebar-width: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 13px;
+  }
+
+  h1 { font-size: 22px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  h4 { font-size: 16px; }
+
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+
+  h1 { font-size: 20px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 16px; }
+
+  .hide-small {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+/* ===================================
+   17. PRINT STYLES
+   =================================== */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  .no-print,
+  button,
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  a::after {
+    content: ' (' attr(href) ')';
+    font-size: 10pt;
+    color: #666;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+}
+
+/* ===================================
+   18. DARK MODE (Optional — Auto)
+   =================================== */
+@media (prefers-color-scheme: dark) {
+  /* Currently disabled — enable if you want auto dark mode */
+  /*
+  :root {
+    --jv-bg: #1a202c;
+    --jv-bg-card: #2d3748;
+    --jv-dark: #f7fafc;
+    --jv-gray-100: #2d3748;
+    --jv-gray-200: #4a5568;
+  }
+  */
+}

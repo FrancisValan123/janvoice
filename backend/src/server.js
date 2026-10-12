@@ -1,46 +1,334 @@
+/* ===================================
+   JANVOICE — BACKEND SERVER
+   Main Express application entry point
+   =================================== */
+
 const express = require('express')
-const mongoose = require('mongoose')
 const cors = require('cors')
 const dotenv = require('dotenv')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const compression = require('compression')
+const http = require('http')
+const path = require('path')
 
+// ===================================
+// LOAD ENVIRONMENT VARIABLES FIRST
+// ===================================
 dotenv.config()
 
+// ===================================
+// CREATE APP + HTTP SERVER
+// ===================================
 const app = express()
+const server = http.createServer(app)
 
-// Middleware
+// ===================================
+// CONFIG IMPORTS
+// ===================================
+const { connectDB, disconnectDB } = require('./config/database')
+const { verifyEmailConnection } = require('./config/email')
+const { initSocket } = require('./config/socket')
+const { initRedis, disconnectRedis } = require('./config/redis')
+
+// ===================================
+// MIDDLEWARE IMPORTS
+// ===================================
+const { corsMiddleware } = require('./middleware/cors')
+const {
+  sanitizeMongo,
+  sanitizeXSS,
+  preventHPP,
+  trimStrings
+} = require('./middleware/sanitize')
+const { httpLogger } = require('./middleware/logger')
+const { apiLimiter } = require('./middleware/rateLimiter')
+const { errorHandler, notFound } = require('./middleware/errorHandler')
+
+// ===================================
+// SOCKET IMPORTS
+// ===================================
+const { initializeSocketHandlers } = require('./sockets')
+
+// ===================================
+// JOB IMPORTS
+// ===================================
+const { startDeadlineChecker } = require('./jobs/deadlineChecker')
+const { startNotificationSender } = require('./jobs/notificationSender')
+const { startDataBackup } = require('./jobs/dataBackup')
+const { startReportGenerator } = require('./jobs/reportGenerator')
+
+// ===================================
+// ROUTE IMPORTS
+// ===================================
+const apiRoutes = require('./routes')
+
+// ===================================
+// LOGGER
+// ===================================
+const logger = require('./utils/logger')
+
+// ===================================
+// SECURITY MIDDLEWARE
+// ===================================
 app.use(helmet())
-app.use(cors())
+app.use(corsMiddleware)
+
+// ===================================
+// BODY PARSING + COMPRESSION
+// ===================================
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(compression())
-app.use(morgan('dev'))
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
 
-// Database connection
-mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/janvoice')
-  .then(() => console.log('✅ MongoDB connected successfully'))
-  .catch((err) => console.error('❌ MongoDB connection error:', err.message))
+// ===================================
+// HTTP REQUEST LOGGING
+// ===================================
+app.use(httpLogger)
 
-// Health check route
+// ===================================
+// INPUT SANITIZATION
+// ===================================
+app.use(sanitizeMongo)   // Prevent NoSQL injection
+app.use(sanitizeXSS)     // Prevent XSS attacks
+app.use(preventHPP)      // Prevent HTTP parameter pollution
+app.use(trimStrings)     // Trim whitespace
+
+// ===================================
+// SERVE STATIC UPLOADS (local fallback)
+// ===================================
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+
+// ===================================
+// RATE LIMITING
+// ===================================
+app.use('/api', apiLimiter)
+
+// ===================================
+// HEALTH CHECK
+// ===================================
 app.get('/api/health', (req, res) => {
-  res.json({
+  const mongoose = require('mongoose')
+
+  res.status(200).json({
     status: 'OK',
     message: 'JanVoice API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+    services: {
+      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      server: 'running'
+    }
   })
 })
 
-// Root route
+// ===================================
+// ROOT ROUTE
+// ===================================
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to JanVoice API' })
+  res.json({
+    success: true,
+    name: 'JanVoice API',
+    version: '1.0.0',
+    description: 'National Public Complaint & Action Platform',
+    documentation: '/api/docs',
+    health: '/api/health'
+  })
 })
 
+// ===================================
+// API ROUTES
+// ===================================
+app.use('/api', apiRoutes)
+
+// ===================================
+// 404 NOT FOUND HANDLER
+// ===================================
+app.use(notFound)
+
+// ===================================
+// GLOBAL ERROR HANDLER
+// ===================================
+app.use(errorHandler)
+
+// ===================================
+// INITIALIZE SERVICES
+// ===================================
+const initializeServices = async () => {
+  try {
+    console.log('🔄 Initializing services...')
+
+    // Connect to MongoDB
+    await connectDB()
+
+    // Verify email service
+    await verifyEmailConnection()
+
+    // Connect to Redis (optional)
+    if (process.env.REDIS_URL) {
+      await initRedis()
+    }
+
+    console.log('✅ All services initialized')
+  } catch (error) {
+    console.error('❌ Service initialization failed:', error.message)
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1)
+    }
+  }
+}
+
+// ===================================
+// INITIALIZE SOCKET.IO
+// ===================================
+initSocket(server)
+initializeSocketHandlers()
+
+// ===================================
+// START BACKGROUND JOBS
+// ===================================
+const startJobs = () => {
+  const jobsEnabled =
+    process.env.NODE_ENV === 'production' ||
+    process.env.ENABLE_JOBS === 'true'
+
+  if (!jobsEnabled) {
+    console.log('ℹ️  Background jobs disabled (set ENABLE_JOBS=true to enable)')
+    return
+  }
+
+  try {
+    console.log('🚀 Starting background jobs...')
+
+    startDeadlineChecker()       // Every 15 min
+    startNotificationSender()    // Every 5 min
+    startDataBackup()            // Daily 2 AM
+    startReportGenerator()       // Weekly Monday 6 AM
+
+    console.log('✅ Background jobs running')
+  } catch (error) {
+    console.error('❌ Failed to start jobs:', error.message)
+  }
+}
+
+// ===================================
+// START SERVER
+// ===================================
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📡 API available at http://localhost:${PORT}/api`)
-  console.log(`🔗 Frontend at http://localhost:5173`)
+
+const startServer = async () => {
+  try {
+    // Initialize all services
+    await initializeServices()
+
+    // Start listening
+    server.listen(PORT, () => {
+      console.log('\n' + '='.repeat(60))
+      console.log(`🚀 JanVoice API Server`)
+      console.log('='.repeat(60))
+      console.log(`📡 Port:        ${PORT}`)
+      console.log(`🔗 API:         http://localhost:${PORT}/api`)
+      console.log(`💚 Health:      http://localhost:${PORT}/api/health`)
+      console.log(`🎨 Frontend:    ${process.env.CLIENT_URL || 'http://localhost:5173'}`)
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
+      console.log(`🔌 WebSocket:   Enabled`)
+      console.log('='.repeat(60) + '\n')
+
+      // Start background jobs
+      startJobs()
+    })
+
+    // Handle server-level errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`)
+        process.exit(1)
+      } else {
+        console.error('❌ Server error:', error.message)
+      }
+    })
+  } catch (error) {
+    console.error('❌ Failed to start server:', error)
+    process.exit(1)
+  }
+}
+
+// ===================================
+// GRACEFUL SHUTDOWN
+// ===================================
+const gracefulShutdown = async (signal) => {
+  console.log(`\n⚠️  ${signal} received. Shutting down gracefully...`)
+
+  // Stop accepting new connections
+  server.close(async () => {
+    console.log('✅ HTTP server closed')
+
+    try {
+      // Disconnect from Redis
+      if (process.env.REDIS_URL) {
+        await disconnectRedis()
+      }
+
+      // Disconnect from MongoDB
+      await disconnectDB()
+
+      console.log('✅ All connections closed')
+      console.log('👋 Goodbye!\n')
+      process.exit(0)
+    } catch (error) {
+      console.error('❌ Error during shutdown:', error.message)
+      process.exit(1)
+    }
+  })
+
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error('⚠️  Forced shutdown after timeout')
+    process.exit(1)
+  }, 10000)
+}
+
+// ===================================
+// PROCESS EVENT HANDLERS
+// ===================================
+
+// Handle SIGTERM (Docker, Kubernetes)
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+
+// Handle SIGINT (Ctrl+C)
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('💥 Uncaught Exception:', error)
+  logger.logError(error, 'uncaughtException')
+  gracefulShutdown('uncaughtException')
 })
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise)
+  console.error('   Reason:', reason)
+
+  logger.logError(
+    reason instanceof Error ? reason : new Error(String(reason)),
+    'unhandledRejection'
+  )
+})
+
+// Handle warning events
+process.on('warning', (warning) => {
+  console.warn('⚠️  Warning:', warning.name, '-', warning.message)
+})
+
+// ===================================
+// BOOT THE SERVER
+// ===================================
+startServer()
+
+// ===================================
+// EXPORT APP
+// ===================================
+module.exports = app

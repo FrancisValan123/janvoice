@@ -1,0 +1,364 @@
+/* ===================================
+   JANVOICE — RESPONSIVE UTILITIES
+   =================================== */
+
+/* ===================================
+   BREAKPOINTS REFERENCE
+   ===================================
+   Mobile:   < 480px
+   Tablet:   480px – 767px
+   Desktop:  768px – 1023px
+   Wide:     1024px+
+   =================================== */
+
+/* ===================================
+   CONTAINER
+   =================================== */
+.jv-container {
+  width: 100%;
+  max-width: var(--jv-content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--jv-container-padding);
+}
+
+@media (max-width: 768px) {
+  .jv-container {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .jv-container {
+    padding: 0 12px;
+  }
+}
+
+/* ===================================
+   RESPONSIVE GRIDS
+   =================================== */
+.jv-grid {
+  display: grid;
+  gap: var(--jv-space-lg);
+}
+
+.jv-grid-auto {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.jv-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.jv-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.jv-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .jv-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .jv-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .jv-grid-4,
+  .jv-grid-3,
+  .jv-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .jv-grid-4,
+  .jv-grid-3,
+  .jv-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===================================
+   RESPONSIVE FLEX UTILITIES
+   =================================== */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .flex-col-mobile {
+    flex-direction: column !important;
+  }
+
+  .w-full-mobile {
+    width: 100% !important;
+  }
+
+  .text-center-mobile {
+    text-align: center !important;
+  }
+
+  .stack-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--jv-space-lg) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hide-small {
+    display: none !important;
+  }
+
+  .flex-col-small {
+    flex-direction: column !important;
+  }
+
+  .w-full-small {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 481px) {
+  .show-mobile-only {
+    display: none !important;
+  }
+}
+
+/* ===================================
+   RESPONSIVE PADDING
+   =================================== */
+@media (max-width: 768px) {
+  .p-32 { padding: 20px !important; }
+  .p-24 { padding: 16px !important; }
+  .p-20 { padding: 14px !important; }
+
+  .px-40 { padding-left: 20px !important; padding-right: 20px !important; }
+  .px-32 { padding-left: 16px !important; padding-right: 16px !important; }
+
+  .py-40 { padding-top: 20px !important; padding-bottom: 20px !important; }
+  .py-32 { padding-top: 16px !important; padding-bottom: 16px !important; }
+}
+
+@media (max-width: 480px) {
+  .p-32 { padding: 14px !important; }
+  .p-24 { padding: 12px !important; }
+
+  .px-40 { padding-left: 14px !important; padding-right: 14px !important; }
+  .px-32 { padding-left: 12px !important; padding-right: 12px !important; }
+}
+
+/* ===================================
+   RESPONSIVE TYPOGRAPHY
+   =================================== */
+@media (max-width: 768px) {
+  .text-4xl { font-size: 24px !important; }
+  .text-3xl { font-size: 20px !important; }
+  .text-2xl { font-size: 18px !important; }
+  .text-xl { font-size: 16px !important; }
+}
+
+@media (max-width: 480px) {
+  .text-4xl { font-size: 20px !important; }
+  .text-3xl { font-size: 18px !important; }
+  .text-2xl { font-size: 16px !important; }
+}
+
+/* ===================================
+   RESPONSIVE TABLES
+   =================================== */
+.jv-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .jv-table-stack thead {
+    display: none;
+  }
+
+  .jv-table-stack tbody tr {
+    display: block;
+    margin-bottom: var(--jv-space-lg);
+    background: var(--jv-bg-card);
+    border-radius: var(--jv-radius-md);
+    padding: var(--jv-space-lg);
+    box-shadow: var(--jv-shadow-sm);
+  }
+
+  .jv-table-stack tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--jv-space-sm) 0;
+    border-bottom: 1px solid var(--jv-gray-200);
+    font-size: var(--jv-text-base);
+  }
+
+  .jv-table-stack tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .jv-table-stack tbody td::before {
+    content: attr(data-label);
+    font-weight: var(--jv-font-bold);
+    color: var(--jv-gray-600);
+    margin-right: var(--jv-space-md);
+    font-size: var(--jv-text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* ===================================
+   RESPONSIVE SIDEBAR
+   =================================== */
+@media (max-width: 768px) {
+  .jv-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: var(--jv-z-sidebar);
+  }
+
+  .jv-sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* ===================================
+   RESPONSIVE CARDS
+   =================================== */
+@media (max-width: 768px) {
+  .jv-card {
+    padding: var(--jv-space-lg) !important;
+    border-radius: var(--jv-radius-md);
+  }
+
+  .jv-card-header {
+    margin-bottom: var(--jv-space-lg);
+    padding-bottom: var(--jv-space-md);
+  }
+}
+
+/* ===================================
+   RESPONSIVE BUTTONS
+   =================================== */
+@media (max-width: 480px) {
+  .jv-btn {
+    padding: var(--jv-space-md) var(--jv-space-lg);
+    font-size: var(--jv-text-sm);
+  }
+
+  .jv-btn-block-mobile {
+    display: flex;
+    width: 100%;
+  }
+}
+
+/* ===================================
+   RESPONSIVE WELCOME BANNER
+   =================================== */
+@media (max-width: 768px) {
+  .jv-welcome {
+    padding: var(--jv-space-xl) var(--jv-space-lg);
+    border-radius: var(--jv-radius-lg);
+  }
+
+  .jv-welcome-title {
+    font-size: var(--jv-text-2xl);
+  }
+
+  .jv-welcome-subtitle {
+    font-size: var(--jv-text-base);
+  }
+}
+
+/* ===================================
+   MOBILE OVERLAY
+   =================================== */
+.jv-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--jv-z-sidebar) - 1);
+  animation: jv-fadeIn 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .jv-overlay.active {
+    display: block;
+  }
+}
+
+/* ===================================
+   RESPONSIVE MODAL
+   =================================== */
+@media (max-width: 768px) {
+  .jv-modal {
+    width: calc(100vw - 32px) !important;
+    max-width: 100% !important;
+    margin: 16px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* ===================================
+   RESPONSIVE DROPDOWN
+   =================================== */
+@media (max-width: 480px) {
+  .jv-dropdown {
+    position: fixed !important;
+    top: 68px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
+
+/* ===================================
+   ASPECT RATIOS
+   =================================== */
+.jv-aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.jv-aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.jv-aspect-photo {
+  aspect-ratio: 4 / 3;
+}
+
+/* ===================================
+   SCROLLABLE PANELS
+   =================================== */
+.jv-scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 100vh;
+}
+
+.jv-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

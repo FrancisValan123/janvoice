@@ -1,162 +1,149 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
+import AdminLayout from './AdminLayout'
 import './AuditLog.css'
 
 const AuditLog = () => {
   const [logs] = useState([
-    { id: 1, user: 'Admin Priya', role: 'system_admin', action: 'Created user', target: 'Officer Ravi Kumar', type: 'create', timestamp: '2026-09-26 11:45:22', ip: '192.168.1.45' },
-    { id: 2, user: 'Officer Ravi', role: 'officer', action: 'Resolved complaint', target: '#JV2026088', type: 'update', timestamp: '2026-09-26 11:32:10', ip: '192.168.1.78' },
-    { id: 3, user: 'Citizen Kumar', role: 'citizen', action: 'Submitted complaint', target: '#JV2026095 (Emergency)', type: 'create', timestamp: '2026-09-26 11:15:45', ip: '10.0.5.22' },
-    { id: 4, user: 'Dept Head Suresh', role: 'department_admin', action: 'Escalated case', target: '#JV2026089', type: 'warning', timestamp: '2026-09-26 10:58:33', ip: '192.168.1.102' },
-    { id: 5, user: 'System', role: 'system', action: 'Automated backup', target: 'Database (47 GB)', type: 'info', timestamp: '2026-09-26 10:00:00', ip: 'localhost' },
-    { id: 6, user: 'Admin Priya', role: 'system_admin', action: 'Deleted category', target: '"Old Category"', type: 'delete', timestamp: '2026-09-26 09:45:12', ip: '192.168.1.45' },
-    { id: 7, user: 'Officer Deepa', role: 'officer', action: 'Updated status', target: '#JV2026090 → Resolved', type: 'update', timestamp: '2026-09-26 09:22:08', ip: '192.168.1.88' },
-    { id: 8, user: 'Admin Priya', role: 'system_admin', action: 'Changed system settings', target: 'Email SLA: 24h → 12h', type: 'update', timestamp: '2026-09-26 08:55:41', ip: '192.168.1.45' },
-    { id: 9, user: 'Citizen Anitha', role: 'citizen', action: 'Login failed', target: 'Invalid password', type: 'danger', timestamp: '2026-09-26 08:30:15', ip: '10.0.5.42' },
-    { id: 10, user: 'Officer Suresh', role: 'officer', action: 'Uploaded evidence', target: '#JV2026091', type: 'create', timestamp: '2026-09-26 08:12:55', ip: '192.168.1.75' }
+    { _id: '1', user: 'Francis Valan', role: 'system_admin', action: 'LOGIN', description: 'Logged in from 192.168.1.5', ip: '192.168.1.5', time: '2026-09-26T18:30:00', severity: 'info' },
+    { _id: '2', user: 'Officer Ravi', role: 'officer', action: 'RESOLVE_COMPLAINT', description: 'Resolved complaint JV2026045', ip: '192.168.1.12', time: '2026-09-26T18:15:00', severity: 'success' },
+    { _id: '3', user: 'Admin Priya', role: 'department_admin', action: 'ASSIGN_OFFICER', description: 'Assigned JV2026050 to Officer Meena', ip: '192.168.1.8', time: '2026-09-26T17:45:00', severity: 'info' },
+    { _id: '4', user: 'Unknown', role: 'unknown', action: 'FAILED_LOGIN', description: 'Failed login attempt for admin@janvoice.gov.in', ip: '203.45.67.89', time: '2026-09-26T17:20:00', severity: 'danger' },
+    { _id: '5', user: 'System Admin', role: 'system_admin', action: 'CREATE_USER', description: 'Created new officer account', ip: '192.168.1.5', time: '2026-09-26T16:00:00', severity: 'success' },
+    { _id: '6', user: 'Francis Valan', role: 'system_admin', action: 'DELETE_USER', description: 'Deleted user kumar@janvoice.gov.in', ip: '192.168.1.5', time: '2026-09-26T15:30:00', severity: 'warning' },
+    { _id: '7', user: 'Authority Suresh', role: 'higher_authority', action: 'ESCALATE_CASE', description: 'Escalated JV2026012 to higher authority', ip: '192.168.1.20', time: '2026-09-26T14:15:00', severity: 'warning' },
+    { _id: '8', user: 'Citizen Kumar', role: 'citizen', action: 'SUBMIT_COMPLAINT', description: 'Submitted emergency complaint JV2026055', ip: '192.168.1.30', time: '2026-09-26T13:00:00', severity: 'info' }
   ])
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState('all')
-  const [filterDate, setFilterDate] = useState('all')
+  const [search, setSearch] = useState('')
+  const [filterAction, setFilterAction] = useState('all')
+  const [filterSeverity, setFilterSeverity] = useState('all')
 
-  const typeConfig = {
-    create: { icon: '➕', label: 'Created', color: '#38A169' },
-    update: { icon: '✏️', label: 'Updated', color: '#4299E1' },
-    delete: { icon: '🗑️', label: 'Deleted', color: '#E53E3E' },
-    warning: { icon: '⚠️', label: 'Warning', color: '#F7931E' },
-    danger: { icon: '🚨', label: 'Alert', color: '#E53E3E' },
-    info: { icon: 'ℹ️', label: 'Info', color: '#805AD5' }
+  const getSeverityConfig = (severity) => {
+    const config = {
+      info: { color: '#4299E1', bg: '#BEE3F8', icon: 'ℹ️' },
+      success: { color: '#38A169', bg: '#C6F6D5', icon: '✅' },
+      warning: { color: '#ED8936', bg: '#FEEBC8', icon: '⚠️' },
+      danger: { color: '#E53E3E', bg: '#FED7D7', icon: '❌' }
+    }
+    return config[severity] || config.info
   }
 
-  const filteredLogs = useMemo(() => {
-    return logs.filter((l) => {
-      const matchesSearch =
-        l.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        l.target.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesType = filterType === 'all' || l.type === filterType
-      return matchesSearch && matchesType
-    })
-  }, [logs, searchTerm, filterType])
+  const actions = [...new Set(logs.map((l) => l.action))]
 
-  const stats = useMemo(() => ({
-    total: logs.length,
-    creates: logs.filter((l) => l.type === 'create').length,
-    updates: logs.filter((l) => l.type === 'update').length,
-    alerts: logs.filter((l) => l.type === 'danger' || l.type === 'warning').length
-  }), [logs])
+  const filteredLogs = logs.filter((log) => {
+    const matchSearch =
+      !search ||
+      log.user.toLowerCase().includes(search.toLowerCase()) ||
+      log.description.toLowerCase().includes(search.toLowerCase())
+    const matchAction = filterAction === 'all' || log.action === filterAction
+    const matchSeverity = filterSeverity === 'all' || log.severity === filterSeverity
+    return matchSearch && matchAction && matchSeverity
+  })
 
   return (
-    <div className="audit-log">
-      <div className="page-header">
-        <div>
-          <h2>📋 Audit Logs</h2>
-          <p>Track all system activity</p>
+    <AdminLayout title="Audit Log">
+      <div className="audit-summary">
+        <div className="summary-card">
+          <div className="summary-value">{logs.length}</div>
+          <div className="summary-label">Total Events</div>
         </div>
-        <button className="btn-export">
-          <span>📥</span> Export CSV
-        </button>
-      </div>
-
-      <div className="quick-stats">
-        <div className="quick-stat">
-          <span className="qs-icon">📋</span>
-          <div>
-            <div className="qs-value">{stats.total}</div>
-            <div className="qs-label">Total Logs</div>
+        <div className="summary-card">
+          <div className="summary-value" style={{ color: '#E53E3E' }}>
+            {logs.filter((l) => l.severity === 'danger').length}
           </div>
+          <div className="summary-label">Security Alerts</div>
         </div>
-        <div className="quick-stat">
-          <span className="qs-icon">➕</span>
-          <div>
-            <div className="qs-value">{stats.creates}</div>
-            <div className="qs-label">Created</div>
+        <div className="summary-card">
+          <div className="summary-value" style={{ color: '#ED8936' }}>
+            {logs.filter((l) => l.severity === 'warning').length}
           </div>
+          <div className="summary-label">Warnings</div>
         </div>
-        <div className="quick-stat">
-          <span className="qs-icon">✏️</span>
-          <div>
-            <div className="qs-value">{stats.updates}</div>
-            <div className="qs-label">Updated</div>
+        <div className="summary-card">
+          <div className="summary-value" style={{ color: '#38A169' }}>
+            {logs.filter((l) => l.severity === 'success').length}
           </div>
-        </div>
-        <div className="quick-stat">
-          <span className="qs-icon">⚠️</span>
-          <div>
-            <div className="qs-value">{stats.alerts}</div>
-            <div className="qs-label">Alerts</div>
-          </div>
+          <div className="summary-label">Success</div>
         </div>
       </div>
 
-      <div className="filters-bar">
-        <div className="search-wrapper">
-          <span>🔍</span>
-          <input
-            type="text"
-            placeholder="Search by user, action or target..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="audit-card">
+        <div className="card-header">
+          <div>
+            <h3 className="card-title">📋 System Activity Log</h3>
+            <p className="card-subtitle">Track all system and user activities</p>
+          </div>
+          <button className="btn-secondary">📥 Export CSV</button>
         </div>
 
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-          <option value="all">All Types</option>
-          <option value="create">➕ Created</option>
-          <option value="update">✏️ Updated</option>
-          <option value="delete">🗑️ Deleted</option>
-          <option value="warning">⚠️ Warning</option>
-          <option value="danger">🚨 Alert</option>
-          <option value="info">ℹ️ Info</option>
-        </select>
+        <div className="filters-bar">
+          <div className="search-box">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search user or action..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <select
+            className="filter-select"
+            value={filterAction}
+            onChange={(e) => setFilterAction(e.target.value)}
+          >
+            <option value="all">All Actions</option>
+            {actions.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+          <select
+            className="filter-select"
+            value={filterSeverity}
+            onChange={(e) => setFilterSeverity(e.target.value)}
+          >
+            <option value="all">All Severities</option>
+            <option value="info">ℹ️ Info</option>
+            <option value="success">✅ Success</option>
+            <option value="warning">⚠️ Warning</option>
+            <option value="danger">❌ Danger</option>
+          </select>
+        </div>
 
-        <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)}>
-          <option value="all">All Time</option>
-          <option value="today">Today</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-        </select>
-      </div>
-
-      <div className="timeline">
-        {filteredLogs.map((log) => {
-          const t = typeConfig[log.type]
-          return (
-            <div key={log.id} className="timeline-item">
-              <div className="timeline-dot" style={{ background: t.color }}>
-                {t.icon}
-              </div>
-              <div className="timeline-card">
-                <div className="timeline-header">
-                  <div>
-                    <span className="log-user">{log.user}</span>
-                    <span className="log-role">{log.role.replace('_', ' ')}</span>
+        <div className="log-list">
+          {filteredLogs.map((log) => {
+            const sev = getSeverityConfig(log.severity)
+            return (
+              <div key={log._id} className="log-item">
+                <div className="log-severity" style={{ background: sev.bg, color: sev.color }}>
+                  {sev.icon}
+                </div>
+                <div className="log-main">
+                  <div className="log-header">
+                    <div className="log-user">
+                      <strong>{log.user}</strong>
+                      <span className="log-role">{log.role}</span>
+                    </div>
+                    <div className="log-time">
+                      {new Date(log.time).toLocaleString('en-IN')}
+                    </div>
                   </div>
-                  <span className="log-time">{log.timestamp}</span>
-                </div>
-                <div className="timeline-body">
-                  <span className="log-action">{log.action}:</span>{' '}
-                  <span className="log-target">{log.target}</span>
-                </div>
-                <div className="timeline-footer">
-                  <span className={`type-badge type-${log.type}`} style={{ background: `${t.color}20`, color: t.color }}>
-                    {t.label}
-                  </span>
-                  <span className="log-ip">🌐 {log.ip}</span>
+                  <div className="log-action-badge">{log.action}</div>
+                  <div className="log-description">{log.description}</div>
+                  <div className="log-ip">🌐 IP: {log.ip}</div>
                 </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
 
-        {filteredLogs.length === 0 && (
-          <div className="empty-state">
-            <span className="empty-icon">🔍</span>
-            <p>No activity logs found</p>
-          </div>
-        )}
+          {filteredLogs.length === 0 && (
+            <div className="empty-state">
+              <span className="empty-icon">🔍</span>
+              <p>No logs match your filters</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 

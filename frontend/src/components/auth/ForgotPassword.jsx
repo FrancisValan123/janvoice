@@ -26,11 +26,33 @@ const ForgotPassword = () => {
     if (!validateEmail()) return
 
     setLoading(true)
-    // DEMO MODE: Simulate API call (replace with real API when backend ready)
-    setTimeout(() => {
+
+    try {
+      const response = await fetch(
+        'http://localhost:5000/api/auth/forgot-password',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        }
+      )
+
+      const data = await response.json()
+      console.log('📧 Server response:', data)
+
+      if (data.success) {
+        setSuccess(true)
+      } else {
+        setError(data.message || 'Failed to send reset link')
+      }
+    } catch (err) {
+      console.error('❌ Error:', err)
+      setError(
+        'Cannot connect to server. Make sure the backend is running on port 5000.'
+      )
+    } finally {
       setLoading(false)
-      setSuccess(true)
-    }, 1200)
+    }
   }
 
   return (
@@ -44,8 +66,8 @@ const ForgotPassword = () => {
           </div>
           <h2 className="branding-title">Reset Your Password</h2>
           <p className="branding-description">
-            Don't worry — we'll help you get back into your account.
-            Enter your registered email and we'll send you a reset link.
+            Don't worry — we'll help you get back into your account. Enter your
+            registered email and we'll send you a reset link.
           </p>
 
           <div className="feature-list">

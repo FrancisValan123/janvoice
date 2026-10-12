@@ -1,328 +1,180 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
+import AdminLayout from './AdminLayout'
 import './CategoryManagement.css'
 
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([
-    { id: 1, name: 'Street Light', icon: '💡', dept: 'Electricity', priority: 'normal', complaints: 234, status: 'active' },
-    { id: 2, name: 'Garbage Collection', icon: '🗑️', dept: 'Sanitation', priority: 'normal', complaints: 456, status: 'active' },
-    { id: 3, name: 'Water Leakage', icon: '💧', dept: 'Water Supply', priority: 'high', complaints: 189, status: 'active' },
-    { id: 4, name: 'Road Damage', icon: '🛣️', dept: 'Public Works', priority: 'emergency', complaints: 312, status: 'active' },
-    { id: 5, name: 'Drainage Block', icon: '🚰', dept: 'Sanitation', priority: 'high', complaints: 145, status: 'active' },
-    { id: 6, name: 'Illegal Construction', icon: '🏗️', dept: 'Public Works', priority: 'high', complaints: 98, status: 'active' },
-    { id: 7, name: 'Stray Animals', icon: '🐕', dept: 'Sanitation', priority: 'low', complaints: 76, status: 'active' },
-    { id: 8, name: 'Noise Pollution', icon: '🔊', dept: 'Sanitation', priority: 'low', complaints: 54, status: 'active' },
-    { id: 9, name: 'Traffic Signal Issue', icon: '🚦', dept: 'Roads & Transport', priority: 'high', complaints: 112, status: 'active' },
-    { id: 10, name: 'Park Maintenance', icon: '🌳', dept: 'Parks & Recreation', priority: 'low', complaints: 45, status: 'inactive' }
+    { _id: '1', name: 'Roads & Infrastructure', icon: '🛣️', color: '#FF6B35', complaints: 45, active: true },
+    { _id: '2', name: 'Water Supply', icon: '💧', color: '#4299E1', complaints: 32, active: true },
+    { _id: '3', name: 'Sanitation & Waste', icon: '🗑️', color: '#38A169', complaints: 58, active: true },
+    { _id: '4', name: 'Electricity', icon: '⚡', color: '#ED8936', complaints: 22, active: true },
+    { _id: '5', name: 'Public Safety', icon: '🚨', color: '#E53E3E', complaints: 18, active: true },
+    { _id: '6', name: 'Transport', icon: '🚌', color: '#805AD5', complaints: 15, active: true },
+    { _id: '7', name: 'Health', icon: '🏥', color: '#E53E3E', complaints: 12, active: true },
+    { _id: '8', name: 'Education', icon: '📚', color: '#3182CE', complaints: 8, active: false },
+    { _id: '9', name: 'Environment', icon: '🌳', color: '#38A169', complaints: 10, active: true },
+    { _id: '10', name: 'Other', icon: '📁', color: '#718096', complaints: 5, active: true }
   ])
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterDept, setFilterDept] = useState('all')
-  const [filterPriority, setFilterPriority] = useState('all')
   const [showModal, setShowModal] = useState(false)
-  const [editingCat, setEditingCat] = useState(null)
-  const [toast, setToast] = useState(null)
+  const [editing, setEditing] = useState(null)
+  const [formData, setFormData] = useState({ name: '', icon: '', color: '#FF6B35' })
 
-  const [formData, setFormData] = useState({
-    name: '',
-    icon: '📋',
-    dept: 'Public Works',
-    priority: 'normal',
-    status: 'active'
-  })
-
-  const priorityConfig = {
-    emergency: { label: '🔴 Emergency', color: '#E53E3E' },
-    high: { label: '🟠 High', color: '#F7931E' },
-    normal: { label: '🟡 Normal', color: '#ECC94B' },
-    low: { label: '🔵 Low', color: '#4299E1' }
-  }
-
-  const departments = ['Public Works', 'Water Supply', 'Sanitation', 'Electricity', 'Roads & Transport', 'Parks & Recreation']
-  const icons = ['💡', '🗑️', '💧', '🛣️', '🚰', '🏗️', '🐕', '🔊', '🚦', '🌳', '📋', '🏠', '🚗', '⚡', '🔥', '📡']
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
-  }
-
-  const filteredCats = useMemo(() => {
-    return categories.filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesDept = filterDept === 'all' || c.dept === filterDept
-      const matchesPriority = filterPriority === 'all' || c.priority === filterPriority
-      return matchesSearch && matchesDept && matchesPriority
-    })
-  }, [categories, searchTerm, filterDept, filterPriority])
-
-  const stats = useMemo(() => ({
-    total: categories.length,
-    active: categories.filter((c) => c.status === 'active').length,
-    emergency: categories.filter((c) => c.priority === 'emergency').length,
-    totalComplaints: categories.reduce((sum, c) => sum + c.complaints, 0)
-  }), [categories])
-
-  const openAddModal = () => {
-    setEditingCat(null)
-    setFormData({ name: '', icon: '📋', dept: 'Public Works', priority: 'normal', status: 'active' })
-    setShowModal(true)
-  }
-
-  const openEditModal = (cat) => {
-    setEditingCat(cat)
-    setFormData({
-      name: cat.name,
-      icon: cat.icon,
-      dept: cat.dept,
-      priority: cat.priority,
-      status: cat.status
-    })
-    setShowModal(true)
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (editingCat) {
-      setCategories(categories.map((c) => (c.id === editingCat.id ? { ...c, ...formData } : c)))
-      showToast('Category updated successfully! ✅')
+  const handleSave = () => {
+    if (editing) {
+      setCategories((prev) =>
+        prev.map((c) => (c._id === editing._id ? { ...c, ...formData } : c))
+      )
     } else {
-      const newCat = { id: categories.length + 1, ...formData, complaints: 0 }
-      setCategories([...categories, newCat])
-      showToast('Category added successfully! ✅')
+      setCategories((prev) => [
+        ...prev,
+        {
+          _id: String(Date.now()),
+          ...formData,
+          complaints: 0,
+          active: true
+        }
+      ])
     }
     setShowModal(false)
+    setEditing(null)
+    setFormData({ name: '', icon: '', color: '#FF6B35' })
+  }
+
+  const handleToggleActive = (id) => {
+    setCategories((prev) =>
+      prev.map((c) => (c._id === id ? { ...c, active: !c.active } : c))
+    )
   }
 
   const handleDelete = (id) => {
     if (window.confirm('Delete this category?')) {
-      setCategories(categories.filter((c) => c.id !== id))
-      showToast('Category deleted! 🗑️', 'danger')
+      setCategories((prev) => prev.filter((c) => c._id !== id))
     }
   }
 
-  const toggleStatus = (id) => {
-    setCategories(categories.map((c) =>
-      c.id === id ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' } : c
-    ))
-    showToast('Status updated! ✅')
-  }
-
   return (
-    <div className="cat-management">
-      {toast && <div className={`toast toast-${toast.type}`}>{toast.message}</div>}
-
-      <div className="page-header">
-        <div>
-          <h2>📂 Category Management</h2>
-          <p>Manage complaint categories</p>
+    <AdminLayout title="Category Management">
+      <div className="cat-summary">
+        <div className="summary-card">
+          <div className="summary-value">{categories.length}</div>
+          <div className="summary-label">Total Categories</div>
         </div>
-        <button className="btn-add" onClick={openAddModal}>
-          <span>➕</span> Add Category
-        </button>
-      </div>
-
-      <div className="quick-stats">
-        <div className="quick-stat">
-          <span className="qs-icon">📂</span>
-          <div>
-            <div className="qs-value">{stats.total}</div>
-            <div className="qs-label">Total</div>
-          </div>
+        <div className="summary-card">
+          <div className="summary-value">{categories.filter((c) => c.active).length}</div>
+          <div className="summary-label">Active</div>
         </div>
-        <div className="quick-stat">
-          <span className="qs-icon">✅</span>
-          <div>
-            <div className="qs-value">{stats.active}</div>
-            <div className="qs-label">Active</div>
+        <div className="summary-card">
+          <div className="summary-value">
+            {categories.reduce((s, c) => s + c.complaints, 0)}
           </div>
-        </div>
-        <div className="quick-stat">
-          <span className="qs-icon">🔴</span>
-          <div>
-            <div className="qs-value">{stats.emergency}</div>
-            <div className="qs-label">Emergency</div>
-          </div>
-        </div>
-        <div className="quick-stat">
-          <span className="qs-icon">📋</span>
-          <div>
-            <div className="qs-value">{stats.totalComplaints}</div>
-            <div className="qs-label">Complaints</div>
-          </div>
+          <div className="summary-label">Total Complaints</div>
         </div>
       </div>
 
-      <div className="filters-bar">
-        <div className="search-wrapper">
-          <span>🔍</span>
-          <input
-            type="text"
-            placeholder="Search categories..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="cat-card">
+        <div className="card-header">
+          <div>
+            <h3 className="card-title">📂 Complaint Categories</h3>
+            <p className="card-subtitle">Manage categories for citizen complaints</p>
+          </div>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              setEditing(null)
+              setFormData({ name: '', icon: '', color: '#FF6B35' })
+              setShowModal(true)
+            }}
+          >
+            ➕ Add Category
+          </button>
         </div>
 
-        <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
-          <option value="all">All Departments</option>
-          {departments.map((d) => (
-            <option key={d} value={d}>{d}</option>
+        <div className="cat-grid">
+          {categories.map((cat) => (
+            <div key={cat._id} className={`cat-item ${!cat.active ? 'inactive' : ''}`}>
+              <div className="cat-icon-wrapper" style={{ background: cat.color + '20' }}>
+                <span className="cat-icon">{cat.icon}</span>
+              </div>
+              <div className="cat-info">
+                <div className="cat-name">{cat.name}</div>
+                <div className="cat-count">{cat.complaints} complaints</div>
+              </div>
+              <div className="cat-actions">
+                <button
+                  className={`status-pill ${cat.active ? 'active' : 'inactive'}`}
+                  onClick={() => handleToggleActive(cat._id)}
+                >
+                  {cat.active ? 'Active' : 'Inactive'}
+                </button>
+                <button
+                  className="icon-action"
+                  onClick={() => {
+                    setEditing(cat)
+                    setFormData({ name: cat.name, icon: cat.icon, color: cat.color })
+                    setShowModal(true)
+                  }}
+                >
+                  ✏️
+                </button>
+                <button
+                  className="icon-action danger"
+                  onClick={() => handleDelete(cat._id)}
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
           ))}
-        </select>
-
-        <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-          <option value="all">All Priorities</option>
-          <option value="emergency">🔴 Emergency</option>
-          <option value="high">🟠 High</option>
-          <option value="normal">🟡 Normal</option>
-          <option value="low">🔵 Low</option>
-        </select>
-      </div>
-
-      <div className="table-wrapper">
-        <table className="cats-table">
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Department</th>
-              <th>Priority</th>
-              <th>Complaints</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCats.map((c) => {
-              const p = priorityConfig[c.priority]
-              return (
-                <tr key={c.id}>
-                  <td>
-                    <div className="cat-cell">
-                      <span className="cat-icon">{c.icon}</span>
-                      <span className="cat-name">{c.name}</span>
-                    </div>
-                  </td>
-                  <td>{c.dept}</td>
-                  <td>
-                    <span className="priority-badge" style={{ background: `${p.color}20`, color: p.color }}>
-                      {p.label}
-                    </span>
-                  </td>
-                  <td className="complaints-cell">{c.complaints}</td>
-                  <td>
-                    <span className={`status-pill status-${c.status}`}>
-                      {c.status === 'active' ? '● Active' : '○ Inactive'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button className="btn-icon edit" onClick={() => openEditModal(c)} title="Edit">✏️</button>
-                      <button className="btn-icon toggle" onClick={() => toggleStatus(c.id)} title="Toggle">
-                        {c.status === 'active' ? '🔒' : '🔓'}
-                      </button>
-                      <button className="btn-icon delete" onClick={() => handleDelete(c.id)} title="Delete">🗑️</button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-
-        {filteredCats.length === 0 && (
-          <div className="empty-state">
-            <span className="empty-icon">🔍</span>
-            <p>No categories found</p>
-          </div>
-        )}
+        </div>
       </div>
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingCat ? '✏️ Edit Category' : '➕ Add Category'}</h3>
+              <h3>{editing ? '✏️ Edit Category' : '➕ Add Category'}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
-
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-field">
-                <label>Category Name *</label>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Category Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Street Light"
-                  required
+                  placeholder="e.g., Roads & Infrastructure"
                 />
               </div>
-
-              <div className="form-field">
-                <label>Icon *</label>
-                <div className="icon-picker">
-                  {icons.map((ic) => (
-                    <button
-                      key={ic}
-                      type="button"
-                      className={`icon-option ${formData.icon === ic ? 'selected' : ''}`}
-                      onClick={() => setFormData({ ...formData, icon: ic })}
-                    >
-                      {ic}
-                    </button>
-                  ))}
-                </div>
+              <div className="form-group">
+                <label>Icon (Emoji)</label>
+                <input
+                  type="text"
+                  value={formData.icon}
+                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                  placeholder="🛣️"
+                  maxLength="2"
+                />
               </div>
-
-              <div className="form-row">
-                <div className="form-field">
-                  <label>Department *</label>
-                  <select
-                    value={formData.dept}
-                    onChange={(e) => setFormData({ ...formData, dept: e.target.value })}
-                  >
-                    {departments.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-field">
-                  <label>Default Priority *</label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  >
-                    <option value="emergency">🔴 Emergency</option>
-                    <option value="high">🟠 High</option>
-                    <option value="normal">🟡 Normal</option>
-                    <option value="low">🔵 Low</option>
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>Color</label>
+                <input
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                />
               </div>
-
-              <div className="form-field">
-                <label>Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-save">
-                  {editingCat ? '💾 Update' : '➕ Add'} Category
-                </button>
-              </div>
-            </form>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleSave}>
+                {editing ? 'Save Changes' : 'Create Category'}
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   )
 }
 

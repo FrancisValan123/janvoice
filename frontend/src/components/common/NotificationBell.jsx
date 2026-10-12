@@ -1,127 +1,205 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useComplaints } from '../../context/ComplaintContext'
+import { Link } from 'react-router-dom'
 import './NotificationBell.css'
 
-const NotificationBell = () => {
-  const navigate = useNavigate()
-  const {
-    notifications,
-    unreadCount,
-    updateNotification,
-    updateAllNotifications
-  } = useComplaints()
+const DEFAULT_NOTIFICATIONS = [
+  {
+    id: 1,
+    type: 'success',
+    title: 'Complaint Resolved',
+    message: 'Your complaint JV2026002 has been resolved.',
+    time: '2 min ago',
+    read: false
+  },
+  {
+    id: 2,
+    type: 'info',
+    title: 'Officer Assigned',
+    message: 'Officer Ravi Kumar has been assigned to JV2026004.',
+    time: '1 hour ago',
+    read: false
+  },
+  {
+    id: 3,
+    type: 'warning',
+    title: 'Action Required',
+    message: 'Please provide feedback for your resolved complaint.',
+    time: '3 hours ago',
+    read: false
+  }
+]
 
+const NotificationBell = ({
+  notifications = DEFAULT_NOTIFICATIONS,
+  viewAllPath = '/citizen/notifications'
+}) => {
   const [open, setOpen] = useState(false)
-  const dropdownRef = useRef(null)
+  const [items, setItems] = useState(notifications)
+  const ref = useRef(null)
 
+  // Keep items in sync when prop changes
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    setItems(Array.isArray(notifications) ? notifications : [])
+  }, [notifications])
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
         setOpen(false)
       }
     }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [open])
 
-  const getIcon = (type) => {
+  // Close on escape key
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    if (open) {
+      document.addEventListener('keydown', handleEscape)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [open])
+
+  // Safely compute unread count
+  const unreadCount = items.filter((n) => n && !n.read).length
+
+  const markAllRead = () => {
+    setItems((prev) =>
+      prev.map((n) => (n ? { ...n, read: true } : n))
+    )
+  }
+
+  const markAsRead = (id) => {
+    setItems((prev) =>
+      prev.map((n) => (n && n.id === id ? { ...n, read: true } : n))
+    )
+  }
+
+  // Safe color getter
+  const getTypeColor = (type) => {
+    const colors = {
+      info: '#4299E1',
+      success: '#38A169',
+      warning: '#ED8936',
+      danger: '#E53E3E',
+      emergency: '#C53030'
+    }
+    return colors[type] || colors.info
+  }
+
+  // Safe icon getter
+  const getTypeIcon = (type) => {
     const icons = {
-      success: '✅',
       info: 'ℹ️',
+      success: '✅',
       warning: '⚠️',
-      danger: '🚨',
-      update: '🔄'
+      danger: '❌',
+      emergency: '🚨'
     }
     return icons[type] || '🔔'
   }
 
-  const getTimeAgo = (iso) => {
-    const diff = Date.now() - new Date(iso).getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return new Date(iso).toLocaleDateString()
-  }
-
-  const handleItemClick = (n) => {
-    if (!n.read) updateNotification(n.id)
-    setOpen(false)
-    navigate('/citizen/notifications')
-  }
-
-  const preview = notifications.slice(0, 5)
-
   return (
-    <div className="notif-bell-wrapper" ref={dropdownRef}>
+    <div className="notification-bell" ref={ref}>
+      {/* Bell Button */}
       <button
-        className="icon-btn notif-bell-btn"
-        title="Notifications"
-        onClick={() => setOpen((o) => !o)}
+        type="button"
+        className="bell-btn"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        aria-expanded={open}
       >
-        🔔
+        <span className="bell-icon">🔔</span>
         {unreadCount > 0 && (
-          <span className="notif-count">
-            {unreadCount > 9 ? '9+' : unreadCount}
+          <span className="bell-badge">
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
+      {/* Dropdown */}
       {open && (
-        <div className="notif-dropdown">
-          <div className="notif-dropdown-header">
-            <h4>Notifications</h4>
+        <div className="notification-dropdown" role="menu">
+          {/* Header */}
+          <div className="dropdown-header">
+            <div className="dropdown-title">
+              🔔 Notifications
+              {unreadCount > 0 && (
+                <span className="unread-pill">{unreadCount} new</span>
+              )}
+            </div>
             {unreadCount > 0 && (
               <button
-                className="notif-mark-all"
-                onClick={() => updateAllNotifications()}
+                type="button"
+                className="btn-mark-all"
+                onClick={markAllRead}
               >
-                Mark all read
+                ✓ Mark all read
               </button>
             )}
           </div>
 
-          <div className="notif-dropdown-body">
-            {preview.length === 0 ? (
-              <div className="notif-empty">
-                <div className="notif-empty-icon">🔔</div>
-                <p>No notifications yet</p>
+          {/* Body */}
+          <div className="dropdown-body">
+            {items.length === 0 ? (
+              <div className="empty-notifications">
+                <div className="empty-icon">🔕</div>
+                <div className="empty-text">No notifications yet</div>
               </div>
             ) : (
-              preview.map((n) => (
-                <div
-                  key={n.id}
-                  className={`notif-item ${n.read ? 'read' : 'unread'}`}
-                  onClick={() => handleItemClick(n)}
-                >
-                  <div className="notif-icon">{getIcon(n.type)}</div>
-                  <div className="notif-content">
-                    <div className="notif-title">{n.title}</div>
-                    <div className="notif-message">{n.message}</div>
-                    <div className="notif-time">{getTimeAgo(n.createdAt)}</div>
+              items.slice(0, 5).map((n) => {
+                if (!n || !n.id) return null
+                return (
+                  <div
+                    key={n.id}
+                    className={`notification-item ${!n.read ? 'unread' : ''}`}
+                    onClick={() => markAsRead(n.id)}
+                    role="menuitem"
+                    tabIndex={0}
+                  >
+                    <div
+                      className="notification-icon"
+                      style={{
+                        background: `${getTypeColor(n.type)}20`,
+                        color: getTypeColor(n.type)
+                      }}
+                    >
+                      {getTypeIcon(n.type)}
+                    </div>
+                    <div className="notification-content">
+                      <div className="notification-title">{n.title}</div>
+                      <div className="notification-message">{n.message}</div>
+                      <div className="notification-time">{n.time}</div>
+                    </div>
+                    {!n.read && <span className="unread-dot"></span>}
                   </div>
-                  {!n.read && <div className="notif-dot"></div>}
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 
-          <div className="notif-dropdown-footer">
-            <button
-              className="notif-view-all"
-              onClick={() => {
-                setOpen(false)
-                navigate('/citizen/notifications')
-              }}
-            >
-              View All Notifications →
-            </button>
-          </div>
+          {/* Footer */}
+          <Link
+            to={viewAllPath}
+            className="dropdown-footer"
+            onClick={() => setOpen(false)}
+          >
+            View All Notifications →
+          </Link>
         </div>
       )}
     </div>

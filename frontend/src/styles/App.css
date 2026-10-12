@@ -1,0 +1,324 @@
+/* ===================================
+   JANVOICE — APP STYLES
+   (Top-level app container & layout)
+   =================================== */
+
+/* ===================================
+   APP ROOT
+   =================================== */
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--jv-bg);
+}
+
+/* ===================================
+   LAYOUT WRAPPER
+   =================================== */
+.jv-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.jv-layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.jv-layout-content {
+  flex: 1;
+  padding: var(--jv-space-2xl);
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .jv-layout-content {
+    padding: var(--jv-space-lg);
+  }
+}
+
+/* ===================================
+   PAGE CONTAINER
+   =================================== */
+.jv-page {
+  max-width: var(--jv-content-max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ===================================
+   SIDEBAR
+   =================================== */
+.jv-sidebar {
+  width: var(--jv-sidebar-width);
+  background: var(--jv-bg-sidebar);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.jv-sidebar.collapsed {
+  width: var(--jv-sidebar-width-collapsed);
+}
+
+/* Sidebar scrollbar */
+.jv-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.jv-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jv-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+/* ===================================
+   TOP BAR
+   =================================== */
+.jv-topbar {
+  background: var(--jv-white);
+  padding: var(--jv-space-md) var(--jv-space-2xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--jv-space-lg);
+  box-shadow: var(--jv-shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: var(--jv-z-sticky);
+  min-height: var(--jv-topbar-height);
+  border-bottom: 1px solid var(--jv-gray-300);
+}
+
+@media (max-width: 768px) {
+  .jv-topbar {
+    padding: var(--jv-space-md) var(--jv-space-lg);
+  }
+}
+
+/* ===================================
+   FOOTER
+   =================================== */
+.jv-footer {
+  background: var(--jv-white);
+  padding: var(--jv-space-lg) var(--jv-space-2xl);
+  border-top: 1px solid var(--jv-gray-300);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--jv-space-md);
+  font-size: var(--jv-text-sm);
+  color: var(--jv-gray-600);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .jv-footer {
+    padding: var(--jv-space-lg);
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ===================================
+   LOADING FULL PAGE
+   =================================== */
+.jv-loading-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: var(--jv-space-lg);
+  background: var(--jv-bg);
+}
+
+.jv-loading-page .spinner {
+  width: 48px;
+  height: 48px;
+  border-width: 4px;
+}
+
+/* ===================================
+   NOT FOUND PAGE
+   =================================== */
+.jv-not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--jv-space-2xl);
+  text-align: center;
+  background: var(--jv-bg);
+}
+
+.jv-not-found-code {
+  font-size: 120px;
+  font-weight: 900;
+  color: var(--jv-primary);
+  line-height: 1;
+  margin-bottom: var(--jv-space-lg);
+  letter-spacing: -5px;
+}
+
+.jv-not-found-title {
+  font-size: var(--jv-text-3xl);
+  font-weight: var(--jv-font-bold);
+  color: var(--jv-dark);
+  margin-bottom: var(--jv-space-md);
+}
+
+.jv-not-found-text {
+  font-size: var(--jv-text-md);
+  color: var(--jv-gray-600);
+  margin-bottom: var(--jv-space-xl);
+  max-width: 480px;
+}
+
+/* ===================================
+   ACCESS DENIED PAGE
+   =================================== */
+.jv-access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--jv-space-2xl);
+  text-align: center;
+  background: var(--jv-bg);
+}
+
+.jv-access-denied-icon {
+  font-size: 80px;
+  margin-bottom: var(--jv-space-lg);
+}
+
+.jv-access-denied-title {
+  font-size: var(--jv-text-3xl);
+  font-weight: var(--jv-font-extrabold);
+  color: var(--jv-danger);
+  margin-bottom: var(--jv-space-md);
+}
+
+.jv-access-denied-text {
+  font-size: var(--jv-text-md);
+  color: var(--jv-gray-600);
+  margin-bottom: var(--jv-space-xl);
+  max-width: 480px;
+}
+
+/* ===================================
+   SCROLL TO TOP BUTTON
+   =================================== */
+.jv-scroll-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--jv-primary), var(--jv-secondary));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--jv-shadow-primary);
+  transition: var(--jv-transition);
+  z-index: var(--jv-z-fixed);
+  border: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.jv-scroll-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.jv-scroll-top:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--jv-shadow-primary-lg);
+}
+
+/* ===================================
+   TOASTS CONTAINER
+   =================================== */
+.jv-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--jv-space-md);
+  z-index: var(--jv-z-toast);
+  pointer-events: none;
+}
+
+.jv-toast-container > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 480px) {
+  .jv-toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}
+
+/* ===================================
+   MODAL PORTAL
+   =================================== */
+.jv-modal-portal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--jv-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--jv-space-lg);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: jv-fadeIn 0.2s ease;
+}
+
+/* ===================================
+   DIVIDER
+   =================================== */
+.jv-app-divider {
+  height: 1px;
+  background: var(--jv-gray-300);
+  border: none;
+  margin: 0;
+}
+
+/* ===================================
+   SAFE AREA (for mobile notches)
+   =================================== */
+@supports (padding: env(safe-area-inset-top)) {
+  .jv-topbar {
+    padding-top: calc(var(--jv-space-md) + env(safe-area-inset-top));
+  }
+
+  .jv-footer {
+    padding-bottom: calc(var(--jv-space-lg) + env(safe-area-inset-bottom));
+  }
+}

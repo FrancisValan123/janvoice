@@ -1,326 +1,250 @@
 import React, { useState } from 'react'
+import AdminLayout from './AdminLayout'
 import './SystemSettings.css'
 
 const SystemSettings = () => {
-  const [activeTab, setActiveTab] = useState('general')
-  const [toast, setToast] = useState(null)
-
-  const [generalSettings, setGeneralSettings] = useState({
+  const [settings, setSettings] = useState({
     siteName: 'JanVoice',
     siteTagline: 'National Public Complaint & Action Platform',
-    supportEmail: 'support@janvoice.gov.in',
-    supportPhone: '1800-XXX-XXXX',
-    timezone: 'Asia/Kolkata',
-    language: 'en'
-  })
-
-  const [emailSettings, setEmailSettings] = useState({
-    smtpHost: 'smtp.gmail.com',
-    smtpPort: '587',
-    smtpUser: 'janvoice@gmail.com',
-    smtpPass: '••••••••••••',
-    fromName: 'JanVoice',
-    fromEmail: 'noreply@janvoice.gov.in'
-  })
-
-  const [slaSettings, setSlaSettings] = useState({
-    emergency: 1,
-    high: 4,
-    normal: 24,
-    low: 48,
-    autoEscalate: true,
-    escalationHours: 72
-  })
-
-  const [notificationSettings, setNotificationSettings] = useState({
+    contactEmail: 'support@janvoice.gov.in',
+    contactPhone: '1800-XXX-XXXX',
+    maintenanceMode: false,
+    registrationOpen: true,
+    autoAssignComplaints: true,
     emailNotifications: true,
-    smsNotifications: true,
-    pushNotifications: false,
-    weeklyReports: true,
-    dailyDigest: false
+    smsNotifications: false,
+    emergencyResponseTime: 1,
+    highResponseTime: 4,
+    normalResponseTime: 24,
+    lowResponseTime: 48
   })
 
-  const showToast = (message) => {
-    setToast(message)
-    setTimeout(() => setToast(null), 3000)
+  const handleChange = (field, value) => {
+    setSettings((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSave = () => {
-    showToast('✅ Settings saved successfully!')
+    alert('Settings saved successfully!')
   }
 
-  const tabs = [
-    { id: 'general', label: 'General', icon: '⚙️' },
-    { id: 'email', label: 'Email', icon: '📧' },
-    { id: 'sla', label: 'SLA', icon: '⏱️' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' }
-  ]
+  const Toggle = ({ checked, onChange }) => (
+    <button
+      onClick={() => onChange(!checked)}
+      className={`toggle ${checked ? 'on' : 'off'}`}
+      type="button"
+    >
+      <span className="toggle-knob"></span>
+    </button>
+  )
 
   return (
-    <div className="system-settings">
-      {toast && <div className="toast toast-success">{toast}</div>}
+    <AdminLayout title="System Settings">
+      <div className="settings-container">
+        {/* General Settings */}
+        <div className="settings-card">
+          <div className="settings-header">
+            <h3 className="settings-title">⚙️ General Settings</h3>
+            <p className="settings-subtitle">Configure basic platform information</p>
+          </div>
 
-      <div className="page-header">
-        <div>
-          <h2>⚙️ System Settings</h2>
-          <p>Configure the JanVoice platform</p>
+          <div className="settings-body">
+            <div className="form-group">
+              <label>Site Name</label>
+              <input
+                type="text"
+                value={settings.siteName}
+                onChange={(e) => handleChange('siteName', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Site Tagline</label>
+              <input
+                type="text"
+                value={settings.siteTagline}
+                onChange={(e) => handleChange('siteTagline', e.target.value)}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Contact Email</label>
+                <input
+                  type="email"
+                  value={settings.contactEmail}
+                  onChange={(e) => handleChange('contactEmail', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Contact Phone</label>
+                <input
+                  type="tel"
+                  value={settings.contactPhone}
+                  onChange={(e) => handleChange('contactPhone', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <button className="btn-save-all" onClick={handleSave}>
-          <span>💾</span> Save Changes
-        </button>
-      </div>
 
-      <div className="settings-layout">
-        <aside className="settings-tabs">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
-            </button>
-          ))}
-        </aside>
+        {/* System Controls */}
+        <div className="settings-card">
+          <div className="settings-header">
+            <h3 className="settings-title">🎛️ System Controls</h3>
+            <p className="settings-subtitle">Enable or disable system features</p>
+          </div>
 
-        <div className="settings-content">
-          {activeTab === 'general' && (
-            <div className="settings-panel">
-              <h3 className="panel-title">General Settings</h3>
-              <p className="panel-desc">Basic configuration for the platform</p>
+          <div className="settings-body">
+            <div className="toggle-row">
+              <div className="toggle-info">
+                <div className="toggle-label">Maintenance Mode</div>
+                <div className="toggle-description">
+                  Temporarily disable access for non-admin users
+                </div>
+              </div>
+              <Toggle
+                checked={settings.maintenanceMode}
+                onChange={(v) => handleChange('maintenanceMode', v)}
+              />
+            </div>
 
-              <div className="form-grid">
-                <div className="form-field">
-                  <label>Site Name</label>
-                  <input
-                    type="text"
-                    value={generalSettings.siteName}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, siteName: e.target.value })}
-                  />
+            <div className="toggle-row">
+              <div className="toggle-info">
+                <div className="toggle-label">Registration Open</div>
+                <div className="toggle-description">
+                  Allow new users to register accounts
                 </div>
-                <div className="form-field">
-                  <label>Site Tagline</label>
-                  <input
-                    type="text"
-                    value={generalSettings.siteTagline}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, siteTagline: e.target.value })}
-                  />
+              </div>
+              <Toggle
+                checked={settings.registrationOpen}
+                onChange={(v) => handleChange('registrationOpen', v)}
+              />
+            </div>
+
+            <div className="toggle-row">
+              <div className="toggle-info">
+                <div className="toggle-label">Auto-Assign Complaints</div>
+                <div className="toggle-description">
+                  Automatically assign complaints to available officers
                 </div>
-                <div className="form-field">
-                  <label>Support Email</label>
-                  <input
-                    type="email"
-                    value={generalSettings.supportEmail}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, supportEmail: e.target.value })}
-                  />
+              </div>
+              <Toggle
+                checked={settings.autoAssignComplaints}
+                onChange={(v) => handleChange('autoAssignComplaints', v)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="settings-card">
+          <div className="settings-header">
+            <h3 className="settings-title">🔔 Notifications</h3>
+            <p className="settings-subtitle">Choose how to notify users</p>
+          </div>
+
+          <div className="settings-body">
+            <div className="toggle-row">
+              <div className="toggle-info">
+                <div className="toggle-label">Email Notifications</div>
+                <div className="toggle-description">
+                  Send email updates for complaint status
                 </div>
-                <div className="form-field">
-                  <label>Support Phone</label>
-                  <input
-                    type="tel"
-                    value={generalSettings.supportPhone}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, supportPhone: e.target.value })}
-                  />
+              </div>
+              <Toggle
+                checked={settings.emailNotifications}
+                onChange={(v) => handleChange('emailNotifications', v)}
+              />
+            </div>
+
+            <div className="toggle-row">
+              <div className="toggle-info">
+                <div className="toggle-label">SMS Notifications</div>
+                <div className="toggle-description">
+                  Send SMS alerts for emergency complaints
                 </div>
-                <div className="form-field">
-                  <label>Timezone</label>
-                  <select
-                    value={generalSettings.timezone}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, timezone: e.target.value })}
-                  >
-                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                    <option value="Asia/Dubai">Asia/Dubai (GST)</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                </div>
-                <div className="form-field">
-                  <label>Default Language</label>
-                  <select
-                    value={generalSettings.language}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, language: e.target.value })}
-                  >
-                    <option value="en">English</option>
-                    <option value="hi">हिन्दी (Hindi)</option>
-                    <option value="ta">தமிழ் (Tamil)</option>
-                  </select>
-                </div>
+              </div>
+              <Toggle
+                checked={settings.smsNotifications}
+                onChange={(v) => handleChange('smsNotifications', v)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Response Times */}
+        <div className="settings-card">
+          <div className="settings-header">
+            <h3 className="settings-title">⏱️ SLA Response Times</h3>
+            <p className="settings-subtitle">
+              Set maximum response time for each priority level
+            </p>
+          </div>
+
+          <div className="settings-body">
+            <div className="form-row">
+              <div className="form-group">
+                <label>🔴 Emergency (hours)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={settings.emergencyResponseTime}
+                  onChange={(e) =>
+                    handleChange('emergencyResponseTime', parseInt(e.target.value) || 1)
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label>🟠 High (hours)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={settings.highResponseTime}
+                  onChange={(e) =>
+                    handleChange('highResponseTime', parseInt(e.target.value) || 1)
+                  }
+                />
               </div>
             </div>
-          )}
 
-          {activeTab === 'email' && (
-            <div className="settings-panel">
-              <h3 className="panel-title">Email Configuration</h3>
-              <p className="panel-desc">SMTP settings for outgoing emails</p>
-
-              <div className="form-grid">
-                <div className="form-field">
-                  <label>SMTP Host</label>
-                  <input
-                    type="text"
-                    value={emailSettings.smtpHost}
-                    onChange={(e) => setEmailSettings({ ...emailSettings, smtpHost: e.target.value })}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>SMTP Port</label>
-                  <input
-                    type="text"
-                    value={emailSettings.smtpPort}
-                    onChange={(e) => setEmailSettings({ ...emailSettings, smtpPort: e.target.value })}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>SMTP Username</label>
-                  <input
-                    type="email"
-                    value={emailSettings.smtpUser}
-                    onChange={(e) => setEmailSettings({ ...emailSettings, smtpUser: e.target.value })}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>SMTP Password</label>
-                  <input
-                    type="password"
-                    value={emailSettings.smtpPass}
-                    onChange={(e) => setEmailSettings({ ...emailSettings, smtpPass: e.target.value })}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>From Name</label>
-                  <input
-                    type="text"
-                    value={emailSettings.fromName}
-                    onChange={(e) => setEmailSettings({ ...emailSettings, fromName: e.target.value })}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>From Email</label>
-                  <input
-                    type="email"
-                    value={emailSettings.fromEmail}
-                    onChange={(e) => setEmailSettings({ ...emailSettings, fromEmail: e.target.value })}
-                  />
-                </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>🟡 Normal (hours)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={settings.normalResponseTime}
+                  onChange={(e) =>
+                    handleChange('normalResponseTime', parseInt(e.target.value) || 1)
+                  }
+                />
               </div>
 
-              <button className="btn-test-email">📨 Send Test Email</button>
-            </div>
-          )}
-
-          {activeTab === 'sla' && (
-            <div className="settings-panel">
-              <h3 className="panel-title">SLA Configuration</h3>
-              <p className="panel-desc">Set response times for each priority level</p>
-
-              <div className="sla-grid">
-                <div className="sla-card priority-emergency">
-                  <div className="sla-header">
-                    <span className="sla-icon">🔴</span>
-                    <span className="sla-title">Emergency</span>
-                  </div>
-                  <div className="sla-input">
-                    <input
-                      type="number"
-                      value={slaSettings.emergency}
-                      onChange={(e) => setSlaSettings({ ...slaSettings, emergency: e.target.value })}
-                      min="1"
-                    />
-                    <span className="sla-unit">hours</span>
-                  </div>
-                </div>
-
-                <div className="sla-card priority-high">
-                  <div className="sla-header">
-                    <span className="sla-icon">🟠</span>
-                    <span className="sla-title">High Priority</span>
-                  </div>
-                  <div className="sla-input">
-                    <input
-                      type="number"
-                      value={slaSettings.high}
-                      onChange={(e) => setSlaSettings({ ...slaSettings, high: e.target.value })}
-                      min="1"
-                    />
-                    <span className="sla-unit">hours</span>
-                  </div>
-                </div>
-
-                <div className="sla-card priority-normal">
-                  <div className="sla-header">
-                    <span className="sla-icon">🟡</span>
-                    <span className="sla-title">Normal</span>
-                  </div>
-                  <div className="sla-input">
-                    <input
-                      type="number"
-                      value={slaSettings.normal}
-                      onChange={(e) => setSlaSettings({ ...slaSettings, normal: e.target.value })}
-                      min="1"
-                    />
-                    <span className="sla-unit">hours</span>
-                  </div>
-                </div>
-
-                <div className="sla-card priority-low">
-                  <div className="sla-header">
-                    <span className="sla-icon">🔵</span>
-                    <span className="sla-title">Low Priority</span>
-                  </div>
-                  <div className="sla-input">
-                    <input
-                      type="number"
-                      value={slaSettings.low}
-                      onChange={(e) => setSlaSettings({ ...slaSettings, low: e.target.value })}
-                      min="1"
-                    />
-                    <span className="sla-unit">hours</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="toggle-row">
-                <div>
-                  <div className="toggle-label">Auto-Escalate Overdue Cases</div>
-                  <div className="toggle-desc">Automatically escalate to higher authority</div>
-                </div>
-                <button
-                  className={`toggle-btn ${slaSettings.autoEscalate ? 'on' : 'off'}`}
-                  onClick={() => setSlaSettings({ ...slaSettings, autoEscalate: !slaSettings.autoEscalate })}
-                >
-                  <span className="toggle-circle"></span>
-                </button>
+              <div className="form-group">
+                <label>🔵 Low (hours)</label>
+                <input                  type="number"
+                  min="1"
+                  value={settings.lowResponseTime}
+                  onChange={(e) =>
+                    handleChange('lowResponseTime', parseInt(e.target.value) || 1)
+                  }
+                />
               </div>
             </div>
-          )}
+          </div>
+        </div>
 
-          {activeTab === 'notifications' && (
-            <div className="settings-panel">
-              <h3 className="panel-title">Notification Settings</h3>
-              <p className="panel-desc">Choose how you want to receive notifications</p>
-
-              <div className="toggle-list">
-                {Object.entries(notificationSettings).map(([key, value]) => (
-                  <div key={key} className="toggle-row">
-                    <div>
-                      <div className="toggle-label">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                      <div className="toggle-desc">Enable or disable this notification</div>
-                    </div>
-                    <button
-                      className={`toggle-btn ${value ? 'on' : 'off'}`}
-                      onClick={() => setNotificationSettings({ ...notificationSettings, [key]: !value })}
-                    >
-                      <span className="toggle-circle"></span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* Save Button */}
+        <div className="settings-actions">
+          <button className="btn-secondary">Reset to Defaults</button>
+          <button className="btn-primary" onClick={handleSave}>
+            💾 Save All Settings
+          </button>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   )
 }
 

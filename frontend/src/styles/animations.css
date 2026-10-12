@@ -1,0 +1,417 @@
+/* ===================================
+   JANVOICE — ANIMATIONS
+   =================================== */
+
+/* ===================================
+   KEYFRAMES
+   =================================== */
+
+/* Fade */
+@keyframes jv-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes jv-fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Slide */
+@keyframes jv-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jv-fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jv-slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes jv-slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale */
+@keyframes jv-scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes jv-popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Spin */
+@keyframes jv-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes jv-spinReverse {
+  to { transform: rotate(-360deg); }
+}
+
+/* Pulse */
+@keyframes jv-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes jv-heartbeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.1); }
+  75% { transform: scale(1.05); }
+}
+
+/* Bounce */
+@keyframes jv-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes jv-bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Shake */
+@keyframes jv-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Ping */
+@keyframes jv-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Glow */
+@keyframes jv-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+  }
+}
+
+/* Rotate */
+@keyframes jv-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Skeleton loading */
+@keyframes jv-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Progress bar */
+@keyframes jv-progress {
+  from { width: 0; }
+}
+
+/* ===================================
+   ANIMATION CLASSES
+   =================================== */
+
+/* Fade */
+.animate-fade-in {
+  animation: jv-fadeIn 0.3s ease forwards;
+}
+
+.animate-fade-out {
+  animation: jv-fadeOut 0.3s ease forwards;
+}
+
+/* Slide */
+.animate-fade-in-up {
+  animation: jv-fadeInUp 0.4s ease forwards;
+}
+
+.animate-fade-in-down {
+  animation: jv-fadeInDown 0.4s ease forwards;
+}
+
+.animate-slide-in-right {
+  animation: jv-slideInRight 0.3s ease forwards;
+}
+
+.animate-slide-in-left {
+  animation: jv-slideInLeft 0.3s ease forwards;
+}
+
+/* Scale */
+.animate-scale-in {
+  animation: jv-scaleIn 0.3s ease forwards;
+}
+
+.animate-pop-in {
+  animation: jv-popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Spin */
+.animate-spin {
+  animation: jv-spin 0.8s linear infinite;
+}
+
+.animate-spin-slow {
+  animation: jv-spin 2s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: jv-spinReverse 1s linear infinite;
+}
+
+/* Pulse */
+.animate-pulse {
+  animation: jv-pulse 2s ease-in-out infinite;
+}
+
+.animate-heartbeat {
+  animation: jv-heartbeat 1.5s ease-in-out infinite;
+}
+
+/* Bounce */
+.animate-bounce {
+  animation: jv-bounce 1s ease-in-out infinite;
+}
+
+.animate-bounce-in {
+  animation: jv-bounceIn 0.6s ease forwards;
+}
+
+/* Shake */
+.animate-shake {
+  animation: jv-shake 0.5s ease;
+}
+
+/* Ping */
+.animate-ping {
+  animation: jv-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Glow */
+.animate-glow {
+  animation: jv-glow 2s ease-in-out infinite;
+}
+
+/* Rotate */
+.animate-rotate {
+  animation: jv-rotate 3s linear infinite;
+}
+
+/* ===================================
+   DELAYS
+   =================================== */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-1000 { animation-delay: 1s; }
+
+/* ===================================
+   DURATIONS
+   =================================== */
+.duration-fast { animation-duration: 0.2s; }
+.duration-normal { animation-duration: 0.3s; }
+.duration-slow { animation-duration: 0.5s; }
+.duration-slower { animation-duration: 0.8s; }
+
+/* ===================================
+   LOADING SPINNERS
+   =================================== */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--jv-gray-300, #e2e8f0);
+  border-top-color: var(--jv-primary, #FF6B35);
+  border-radius: 50%;
+  animation: jv-spin 0.8s linear infinite;
+}
+
+.spinner-xs {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+.spinner-xl {
+  width: 48px;
+  height: 48px;
+  border-width: 4px;
+}
+
+.spinner-2xl {
+  width: 64px;
+  height: 64px;
+  border-width: 5px;
+}
+
+/* ===================================
+   SKELETON LOADER
+   =================================== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 25%,
+    #e2e8f0 50%,
+    #f1f5f9 75%
+  );
+  background-size: 200% 100%;
+  animation: jv-skeleton 1.5s ease-in-out infinite;
+  border-radius: var(--jv-radius-sm, 6px);
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton-title {
+  height: 24px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  width: 60%;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.skeleton-card {
+  height: 120px;
+  border-radius: var(--jv-radius-md, 10px);
+}
+
+.skeleton-button {
+  height: 40px;
+  width: 120px;
+  border-radius: var(--jv-radius-md, 10px);
+}
+
+/* ===================================
+   HOVER EFFECTS
+   =================================== */
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.hover-scale {
+  transition: transform 0.25s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-glow {
+  transition: box-shadow 0.25s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+}
+
+/* ===================================
+   REDUCED MOTION SUPPORT
+   =================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

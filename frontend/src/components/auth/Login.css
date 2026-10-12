@@ -5,7 +5,7 @@
 .login-container {
   display: flex;
   min-height: 100vh;
-  background: #f5f7fa;
+  background: var(--bg-app);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -150,7 +150,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: #ffffff;
+  background: var(--bg-surface);
   overflow-y: auto;
 }
 
@@ -167,12 +167,12 @@
 .form-header h2 {
   font-size: 32px;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .form-header p {
-  color: #718096;
+  color: var(--text-tertiary);
   font-size: 15px;
 }
 
@@ -184,7 +184,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 25px;
-  background: #f7fafc;
+  background: var(--bg-surface-secondary);
   padding: 6px;
   border-radius: 12px;
 }
@@ -197,7 +197,7 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #718096;
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
@@ -241,10 +241,12 @@
 }
 
 .alert-error {
-  background: #fff5f5;
+  background: rgba(229, 62, 62, 0.1);
   color: #c53030;
-  border: 1px solid #feb2b2;
+  border: 1px solid rgba(229, 62, 62, 0.3);
 }
+
+html.dark-mode .alert-error { color: #FC8181; }
 
 .alert-icon {
   font-size: 18px;
@@ -260,6 +262,8 @@
   line-height: 1;
   padding: 0 4px;
 }
+
+html.dark-mode .alert-close { color: #FC8181; }
 
 /* ================================
    FORM ELEMENTS
@@ -280,16 +284,16 @@
 .form-group label {
   font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-secondary);
 }
 
 .input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-light);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--input-bg);
   transition: all 0.3s ease;
 }
 
@@ -305,7 +309,7 @@
 .input-icon {
   padding: 0 12px 0 15px;
   font-size: 16px;
-  color: #a0aec0;
+  color: var(--text-muted);
 }
 
 .input-wrapper input {
@@ -314,17 +318,17 @@
   border: none;
   background: transparent;
   font-size: 15px;
-  color: #1a202c;
+  color: var(--text-primary);
   outline: none;
   font-family: inherit;
 }
 
 .input-wrapper input::placeholder {
-  color: #a0aec0;
+  color: var(--text-muted);
 }
 
 .input-wrapper input:disabled {
-  background: #f7fafc;
+  background: var(--input-disabled-bg);
   cursor: not-allowed;
 }
 
@@ -334,7 +338,7 @@
   padding: 0 15px;
   font-size: 16px;
   cursor: pointer;
-  color: #a0aec0;
+  color: var(--text-muted);
   transition: color 0.3s ease;
 }
 
@@ -365,7 +369,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #4a5568;
+  color: var(--text-secondary);
   user-select: none;
 }
 
@@ -457,7 +461,7 @@
   display: flex;
   align-items: center;
   margin: 25px 0;
-  color: #a0aec0;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -467,7 +471,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: var(--border-light);
 }
 
 .divider span {
@@ -483,7 +487,7 @@
 }
 
 .register-section p {
-  color: #718096;
+  color: var(--text-tertiary);
   font-size: 14px;
   margin-bottom: 12px;
 }
@@ -492,7 +496,7 @@
   display: block;
   width: 100%;
   padding: 14px 24px;
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 2px solid #FF6B35;
   color: #FF6B35;
   border-radius: 10px;
@@ -518,12 +522,12 @@
   text-align: center;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-light);
 }
 
 .help-section p {
   font-size: 13px;
-  color: #718096;
+  color: var(--text-tertiary);
 }
 
 .help-section a {
@@ -635,6 +639,7 @@
     gap: 10px;
   }
 }
+
 /* ================================
    FIVE ROLE TABS LAYOUT
    ================================ */
@@ -669,7 +674,6 @@
   max-width: 100%;
 }
 
-/* Responsive: stack on small screens */
 @media (max-width: 500px) {
   .role-tabs-five {
     grid-template-columns: repeat(3, 1fr);

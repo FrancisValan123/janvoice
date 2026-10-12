@@ -1,75 +1,48 @@
-import axios from 'axios';
+import { api } from './api'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Add token to requests
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('janvoice_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Handle token expiration
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('janvoice_token');
-      localStorage.removeItem('janvoice_user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
-
-const authService = {
-  // Login
-  login: async (credentials) => {
-    return api.post('/auth/login', credentials);
-  },
-
-  // Register
+export const authService = {
+  // POST /api/auth/register
+  // Expects: { name, email, password, phone, role }
   register: async (userData) => {
-    return api.post('/auth/register', userData);
+    const response = await api.post('/auth/register', userData)
+    if (response.data.token) {
+      localStorage.setItem('janvoice_token', response.data.token)
+      localStorage.setItem('janvoice_user', JSON.stringify(response.data.user))
+    }
+    return response // 👈 Return full response (AuthContext needs response.data)
   },
 
-  // Logout
-  logout: async () => {
-    return api.post('/auth/logout');
+  // POST /api/auth/login
+  // Expects: { email, password, role }
+  login: async (credentials) => {
+    const response = await api.post('/auth/login', {
+      email: credentials.email,
+      password: credentials.password
+    })
+    if (response.data.token) {
+      localStorage.setItem('janvoice_token', response.data.token)
+      localStorage.setItem('janvoice_user', JSON.stringify(response.data.user))
+    }
+    return response // 👈 Return full response
   },
 
-  // Get current user
+  // POST /api/auth/logout
+  logout: () => {
+    localStorage.removeItem('janvoice_token')
+    localStorage.removeItem('janvoice_user')
+  },
+
+  // GET /api/auth/me
   getCurrentUser: async () => {
-    return api.get('/auth/me');
+    const response = await api.get('/auth/me')
+    return response.data
   },
 
-  // Forgot password
-  forgotPassword: async (email) => {
-    return api.post('/auth/forgot-password', { email });
-  },
-
-  // Reset password
-  resetPassword: async (token, newPassword) => {
-    return api.post('/auth/reset-password', { token, newPassword });
-  },
-
-  // Verify OTP
+  // POST /api/auth/verify-otp
   verifyOTP: async (email, otp) => {
-    return api.post('/auth/verify-otp', { email, otp });
+    const response = await api.post('/auth/verify-otp', { email, otp })
+    return response.data
   }
-};
+}
 
-export default authService;
+export default authService

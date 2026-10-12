@@ -3,13 +3,26 @@
   "version": "1.0.0",
   "description": "JanVoice - National Public Complaint & Action Platform",
   "private": true,
+  "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "client": "cd frontend && npm run dev",
     "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm run dev",
     "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FrancisValan123/janvoice.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FrancisValan123/janvoice/issues"
+  },
+  "homepage": "https://github.com/FrancisValan123/janvoice#readme"
 }

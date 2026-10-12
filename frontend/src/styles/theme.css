@@ -1,0 +1,216 @@
+/* ===================================
+   JANVOICE — THEME APPLICATION
+   Applies CSS variables globally
+   =================================== */
+
+/* Body & App background */
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  transition: background-color var(--transition-base),
+              color var(--transition-base);
+}
+
+/* ===================================
+   GLOBAL INPUT STYLING
+   =================================== */
+input,
+textarea,
+select {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--input-border);
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder);
+  opacity: 1;
+}
+
+/* ✅ Disabled inputs — clearly readable, no transparency fade */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: var(--input-disabled-bg) !important;
+  color: var(--input-disabled-text) !important;
+  -webkit-text-fill-color: var(--input-disabled-text) !important;
+  border-color: var(--border-light) !important;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Dropdown options */
+option {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+}
+
+/* ===================================
+   GLOBAL LABEL READABILITY
+   =================================== */
+label {
+  color: var(--text-secondary);
+}
+
+/* ===================================
+   GLOBAL SCROLLBAR
+   =================================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* ===================================
+   DARK MODE — UNIVERSAL OVERRIDES
+   =================================== */
+
+/* Remove white backgrounds from anything that hasn't been converted */
+html.dark-mode [style*="background: #fff"],
+html.dark-mode [style*="background: white"],
+html.dark-mode [style*="background-color: #fff"],
+html.dark-mode [style*="background-color: white"] {
+  background-color: var(--bg-surface) !important;
+}
+
+html.dark-mode [style*="color: #1a202c"],
+html.dark-mode [style*="color: #1A202C"] {
+  color: var(--text-primary) !important;
+}
+
+/* Card-like elements — match by common class name fragments */
+html.dark-mode [class*="card"],
+html.dark-mode [class*="Card"] {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* Headings inside dark mode */
+html.dark-mode h1,
+html.dark-mode h2,
+html.dark-mode h3,
+html.dark-mode h4,
+html.dark-mode h5,
+html.dark-mode h6 {
+  color: var(--text-primary);
+}
+
+/* Paragraphs and spans inside dark mode */
+html.dark-mode p {
+  color: var(--text-secondary);
+}
+
+/* Force all text elements to use readable colors in dark mode */
+html.dark-mode,
+html.dark-mode body,
+html.dark-mode span,
+html.dark-mode div:not([class*="icon"]):not([class*="badge"]),
+html.dark-mode label {
+  color: var(--text-primary);
+}
+
+/* Muted/secondary text elements */
+html.dark-mode .hint,
+html.dark-mode .stat-label,
+html.dark-mode .section-subtitle,
+html.dark-mode .results-count,
+html.dark-mode .meta-row {
+  color: var(--text-tertiary);
+}
+
+/* Links keep brand color */
+html.dark-mode a {
+  color: var(--brand-primary);
+}
+
+/* Exception: Elements with explicit orange/status colors */
+html.dark-mode [style*="color: #FF6B35"],
+html.dark-mode [style*="color:#FF6B35"],
+html.dark-mode .view-link,
+html.dark-mode .cd-link,
+html.dark-mode .forgot-link,
+html.dark-mode .inline-link {
+  color: #FF6B35 !important;
+}
+
+/* ✅ FIX: Disabled input text must be bright enough to read in dark mode */
+html.dark-mode input:disabled,
+html.dark-mode textarea:disabled,
+html.dark-mode select:disabled {
+  color: #CBD5E0 !important;
+  -webkit-text-fill-color: #CBD5E0 !important;
+  background-color: #1A202C !important;
+  border-color: #2D3748 !important;
+  opacity: 1 !important;
+}
+
+/* Also show disabled input labels clearly */
+html.dark-mode input:disabled::placeholder,
+html.dark-mode textarea:disabled::placeholder {
+  color: #718096 !important;
+  -webkit-text-fill-color: #718096 !important;
+  opacity: 1 !important;
+}
+
+/* ===================================
+   DARK MODE — CATCH-ALL FIXES
+   Force any remaining white backgrounds to dark surface
+   =================================== */
+
+html.dark-mode [class*="notification"],
+html.dark-mode [class*="Notification"] {
+  color: var(--text-primary);
+}
+
+/* Force card/surface classes to use dark bg */
+html.dark-mode .notifications-list > div,
+html.dark-mode .notification-item,
+html.dark-mode .notifications-header,
+html.dark-mode .notifications-tabs,
+html.dark-mode .notifications-empty,
+html.dark-mode .track-search-box,
+html.dark-mode .track-info-card,
+html.dark-mode .track-result,
+html.dark-mode .details-header-card,
+html.dark-mode .details-card,
+html.dark-mode .profile-main,
+html.dark-mode .profile-sidebar,
+html.dark-mode .security-item,
+html.dark-mode .toggle-item,
+html.dark-mode .activity-item,
+html.dark-mode .cd-card,
+html.dark-mode .cd-action-card,
+html.dark-mode .stats-row .mini-stat,
+html.dark-mode .complaint-card,
+html.dark-mode .toolbar,
+html.dark-mode .empty-state {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-light) !important;
+}
+
+/* Force any white bg colors set inline to use the surface color */
+html.dark-mode [style*="background:#fff"],
+html.dark-mode [style*="background: #fff"],
+html.dark-mode [style*="background-color:#fff"],
+html.dark-mode [style*="background-color: #fff"],
+html.dark-mode [style*="background:white"],
+html.dark-mode [style*="background: white"] {
+  background: var(--bg-surface) !important;
+}

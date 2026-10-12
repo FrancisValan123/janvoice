@@ -1,14 +1,8 @@
 import React, { useState } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
-import { getComplaintById } from '../../utils/complaintStorage'
 import './TrackComplaint.css'
 
 const TrackComplaint = () => {
-  const [complaintId, setComplaintId] = useState('')
-  const [complaint, setComplaint] = useState(null)
-  const [error, setError] = useState('')
-  const [searched, setSearched] = useState(false)
-
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/citizen/dashboard' },
     { icon: '📝', label: 'Submit Complaint', path: '/citizen/submit' },
@@ -18,188 +12,175 @@ const TrackComplaint = () => {
     { icon: '👤', label: 'My Profile', path: '/citizen/profile' }
   ]
 
+  const [searchId, setSearchId] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [complaint, setComplaint] = useState(null)
+  const [error, setError] = useState('')
+
+  // Demo data
+  const demoComplaint = {
+    id: 'JV2026001',
+    title: 'Broken street light near Anna Nagar',
+    category: 'Roads & Infrastructure',
+    priority: 'normal',
+    status: 'in-progress',
+    description: 'The street light has been broken for 2 weeks causing safety issues at night.',
+    location: 'Anna Nagar, Chennai - 600040',
+    assignedTo: 'Officer Ravi Kumar',
+    department: 'Public Works',
+    createdAt: '2026-09-15',
+    deadline: '2026-09-22',
+    timeline: [
+      { status: 'Submitted', date: '2026-09-15 10:30 AM', icon: '📝', desc: 'Complaint registered successfully' },
+      { status: 'Assigned', date: '2026-09-15 02:15 PM', icon: '👤', desc: 'Assigned to Officer Ravi Kumar' },
+      { status: 'Investigating', date: '2026-09-16 09:00 AM', icon: '🔍', desc: 'Officer started investigation' },
+      { status: 'In Progress', date: '2026-09-18 11:30 AM', icon: '🚧', desc: 'Repair work has been initiated' },
+      { status: 'Pending Resolution', date: 'In progress', icon: '⏳', desc: 'Awaiting completion' }
+    ]
+  }
+
   const handleSearch = (e) => {
     e.preventDefault()
-    setError('')
-    setComplaint(null)
-    setSearched(true)
-
-    if (!complaintId.trim()) {
+    if (!searchId.trim()) {
       setError('Please enter a complaint ID')
       return
     }
 
-    const found = getComplaintById(complaintId.trim().toUpperCase())
+    setSearching(true)
+    setError('')
+    setComplaint(null)
 
-    if (found) {
-      setComplaint(found)
-    } else {
-      setError('No complaint found with this ID')
+    setTimeout(() => {
+      setSearching(false)
+      if (searchId.toUpperCase() === 'JV2026001' || searchId.length > 5) {
+        setComplaint({ ...demoComplaint, id: searchId.toUpperCase() })
+      } else {
+        setError('No complaint found with this ID. Please check and try again.')
+      }
+    }, 1200)
+  }
+
+  const getStatusConfig = (status) => {
+    const map = {
+      'in-progress': { color: '#3182CE', bg: '#BEE3F8', icon: '🚧' },
+      resolved: { color: '#38A169', bg: '#C6F6D5', icon: '✅' },
+      pending: { color: '#ED8936', bg: '#FEEBC8', icon: '⏳' },
+      assigned: { color: '#4299E1', bg: '#BEE3F8', icon: '👤' }
     }
-  }
-
-  // Timeline steps
-  const getTimeline = (status) => {
-    const steps = [
-      { id: 'Pending', label: 'Complaint Submitted', icon: '📝' },
-      { id: 'Assigned', label: 'Assigned to Officer', icon: '👨‍💼' },
-      { id: 'In Progress', label: 'Work in Progress', icon: '🔧' },
-      { id: 'Resolved', label: 'Resolved', icon: '✅' }
-    ]
-
-    const statusIndex = steps.findIndex((s) => s.id === status)
-    return steps.map((step, i) => ({
-      ...step,
-      completed: i <= statusIndex,
-      active: i === statusIndex
-    }))
-  }
-
-  const formatDate = (iso) => {
-    if (!iso) return 'N/A'
-    return new Date(iso).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const getPriorityLabel = (p) => {
-    const labels = {
-      emergency: '🔴 Emergency',
-      high: '🟠 High Priority',
-      normal: '🟡 Normal',
-      low: '🔵 Low'
-    }
-    return labels[p] || p
+    return map[status] || map.pending
   }
 
   return (
     <DashboardLayout role="citizen" menuItems={menuItems} title="Track Complaint">
       <div className="track-container">
-        {/* Search Header */}
         <div className="track-header">
-          <h2>🔍 Track Your Complaint</h2>
-          <p>Enter your complaint ID to see the current status</p>
+          <h2 className="track-title">🔍 Track Your Complaint</h2>
+          <p className="track-subtitle">
+            Enter your complaint ID to see real-time status and updates
+          </p>
         </div>
 
         {/* Search Form */}
         <form onSubmit={handleSearch} className="track-form">
           <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon-large">🔍</span>
             <input
               type="text"
-              value={complaintId}
-              onChange={(e) => setComplaintId(e.target.value)}
-              placeholder="Enter complaint ID (e.g., JV2026123456)"
+              value={searchId}
+              onChange={(e) => { setSearchId(e.target.value); setError('') }}
+              placeholder="Enter Complaint ID (e.g., JV2026001)"
+              className="track-input"
             />
-            <button type="submit" className="btn-search">
-              Search
+            <button type="submit" className="track-btn" disabled={searching}>
+              {searching ? '⏳ Searching...' : 'Track →'}
             </button>
           </div>
+          {error && <div className="track-error">⚠️ {error}</div>}
         </form>
-
-        {/* Error Message */}
-        {error && (
-          <div className="track-error">
-            <span>⚠️</span> {error}
-          </div>
-        )}
 
         {/* Complaint Details */}
         {complaint && (
           <div className="track-result">
-            {/* Complaint Header */}
-            <div className={`result-header priority-header-${complaint.priority}`}>
-              <div>
-                <div className="result-id">{complaint.complaintNumber}</div>
-                <h3>{complaint.title}</h3>
+            {/* Header Card */}
+            <div className="result-card">
+              <div className="result-header">
+                <div>
+                  <div className="result-id">{complaint.id}</div>
+                  <h3 className="result-title">{complaint.title}</h3>
+                </div>
+                <span
+                  className="result-status"
+                  style={{
+                    background: getStatusConfig(complaint.status).bg,
+                    color: getStatusConfig(complaint.status).color
+                  }}
+                >
+                  {getStatusConfig(complaint.status).icon} {complaint.status.replace('-', ' ').toUpperCase()}
+                </span>
               </div>
-              <span className={`status-badge status-${complaint.status.toLowerCase().replace(' ', '-')}`}>
-                {complaint.status}
-              </span>
-            </div>
 
-            {/* Priority Badge */}
-            <div className="result-priority">
-              <span className={`priority-tag priority-tag-${complaint.priority}`}>
-                {getPriorityLabel(complaint.priority)}
-              </span>
-              <span className="filed-date">
-                Filed on {formatDate(complaint.createdAt)}
-              </span>
+              <div className="result-grid">
+                <div className="result-item">
+                  <div className="ri-label">📁 Category</div>
+                  <div className="ri-value">{complaint.category}</div>
+                </div>
+                <div className="result-item">
+                  <div className="ri-label">👤 Assigned Officer</div>
+                  <div className="ri-value">{complaint.assignedTo}</div>
+                </div>
+                <div className="result-item">
+                  <div className="ri-label">🏛️ Department</div>
+                  <div className="ri-value">{complaint.department}</div>
+                </div>
+                <div className="result-item">
+                  <div className="ri-label">📍 Location</div>
+                  <div className="ri-value">{complaint.location}</div>
+                </div>
+                <div className="result-item">
+                  <div className="ri-label">📅 Submitted</div>
+                  <div className="ri-value">{complaint.createdAt}</div>
+                </div>
+                <div className="result-item">
+                  <div className="ri-label">⏰ Deadline</div>
+                  <div className="ri-value">{complaint.deadline}</div>
+                </div>
+              </div>
             </div>
 
             {/* Timeline */}
-            <div className="timeline-section">
-              <h4>📅 Progress Timeline</h4>
+            <div className="timeline-card">
+              <h3 className="timeline-title">📅 Status Timeline</h3>
               <div className="timeline">
-                {getTimeline(complaint.status).map((step, i) => (
+                {complaint.timeline.map((item, i) => (
                   <div
                     key={i}
-                    className={`timeline-step ${
-                      step.completed ? 'completed' : ''
-                    } ${step.active ? 'active' : ''}`}
+                    className={`timeline-item ${i === complaint.timeline.length - 1 ? 'current' : ''}`}
                   >
-                    <div className="timeline-icon">{step.icon}</div>
+                    <div className="timeline-marker">
+                      <span className="marker-icon">{item.icon}</span>
+                    </div>
                     <div className="timeline-content">
-                      <div className="timeline-label">{step.label}</div>
-                      {step.active && (
-                        <div className="timeline-status">
-                          ← Current Status
-                        </div>
-                      )}
+                      <div className="timeline-status">{item.status}</div>
+                      <div className="timeline-date">{item.date}</div>
+                      <div className="timeline-desc">{item.desc}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Complaint Details */}
-            <div className="details-section">
-              <h4>📋 Complaint Details</h4>
-
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Category</span>
-                  <span className="detail-value">{complaint.category}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Location</span>
-                  <span className="detail-value">📍 {complaint.location}</span>
-                </div>
-                {complaint.affectedPeople && (
-                  <div className="detail-item">
-                    <span className="detail-label">People Affected</span>
-                    <span className="detail-value">👥 {complaint.affectedPeople}</span>
-                  </div>
-                )}
-                <div className="detail-item full-width">
-                  <span className="detail-label">Description</span>
-                  <span className="detail-value">{complaint.description}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Evidence */}
-            {complaint.evidence && (
-              <div className="evidence-section">
-                <h4>📎 Evidence Attached</h4>
-                <div className="evidence-file">
-                  <span>📄</span> {complaint.evidence.name}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Help Section */}
-        {!complaint && (
-          <div className="help-hint">
-            <p>💡 <strong>Tip:</strong> Your complaint ID starts with <code>JV2026</code></p>
-            <p>You can find it in your <a href="/citizen/complaints">My Complaints</a> page.</p>
+        {/* Helper */}
+        {!complaint && !error && (
+          <div className="track-helper">
+            <div className="helper-icon">📌</div>
+            <h4>Where to find your Complaint ID?</h4>
+            <p>
+              Your Complaint ID (format: <strong>JV2026001</strong>) is available
+              in your confirmation email, in your <strong>My Complaints</strong>{' '}
+              list, and in notifications.
+            </p>
           </div>
         )}
       </div>

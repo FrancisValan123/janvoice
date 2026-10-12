@@ -1,0 +1,7 @@
+/* Officer Assigned Complaints — mostly inline styles in JSX above.
+   Add only reusable or responsive overrides here. */
+
+@media (max-width: 768px) {
+  .oac-header { padding: 20px; }
+  .oac-header h2 { font-size: 20px; }
+}
