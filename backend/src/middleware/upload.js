@@ -1,71 +1,60 @@
 /* ===================================
-   JANVOICE — UPLOAD MIDDLEWARE
+   JANVOICE — FILE UPLOAD MIDDLEWARE
+   Uses Multer + Cloudinary
    =================================== */
 
 const multer = require('multer')
-const { FILE_LIMITS, HTTP_STATUS } = require('../config/constants')
+const { CloudinaryStorage } = require('multer-storage-cloudinary')
+const cloudinary = require('../config/cloudinary')
 
-// Memory storage (temp)
-const memoryStorage = multer.memoryStorage()
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    let resourceType = 'auto'
+    if (file.mimetype.startsWith('image/')) resourceType = 'image'
+    else if (file.mimetype.startsWith('video/')) resourceType = 'video'
+    else resourceType = 'raw'
+
+    return {
+      folder: 'janvoice/evidence',
+      resource_type: resourceType,
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'pdf', 'doc', 'docx'],
+      public_id: `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`,
+      transformation:
+        resourceType === 'image'
+          ? [{ width: 1600, height: 1600, crop: 'limit', quality: 'auto' }]
+          : undefined
+    }
+  }
+})
 
 const fileFilter = (req, file, cb) => {
-  const allowed = [
-    ...FILE_LIMITS.ALLOWED_IMAGE_TYPES,
-    ...FILE_LIMITS.ALLOWED_VIDEO_TYPES,
-    ...FILE_LIMITS.ALLOWED_DOC_TYPES
+  const allowedMimes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'video/mp4',
+    'video/quicktime',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ]
 
-  if (allowed.includes(file.mimetype)) {
+  if (allowedMimes.includes(file.mimetype)) {
     cb(null, true)
   } else {
-    cb(new Error(`File type ${file.mimetype} not allowed`), false)
+    cb(new Error(`File type not allowed: ${file.mimetype}`), false)
   }
 }
 
-const uploadEvidence = multer({
-  storage: memoryStorage,
+const upload = multer({
+  storage,
+  fileFilter,
   limits: {
-    fileSize: FILE_LIMITS.MAX_SIZE_BYTES,
-    files: FILE_LIMITS.MAX_FILES
-  },
-  fileFilter
-}).array('files', FILE_LIMITS.MAX_FILES)
-
-const uploadSingle = multer({
-  storage: memoryStorage,
-  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
-  fileFilter
-}).single('image')
-
-const uploadToMemory = multer({
-  storage: memoryStorage,
-  limits: { fileSize: FILE_LIMITS.MAX_SIZE_BYTES, files: 1 }
-}).single('file')
-
-const handleUploadError = (err, res) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: `File too large. Max ${FILE_LIMITS.MAX_SIZE_MB}MB.`
-      })
-    }
-    if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: `Too many files. Max ${FILE_LIMITS.MAX_FILES}.`
-      })
-    }
+    fileSize: 10 * 1024 * 1024, // 10 MB
+    files: 5
   }
-  return res.status(HTTP_STATUS.BAD_REQUEST).json({
-    success: false,
-    message: err.message || 'Upload failed'
-  })
-}
+})
 
-module.exports = {
-  uploadEvidence,
-  uploadSingle,
-  uploadToMemory,
-  handleUploadError
-}
+module.exports = { upload }

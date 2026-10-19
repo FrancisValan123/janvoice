@@ -7,6 +7,22 @@ const { HTTP_STATUS, PRIORITY_SLA_HOURS } = require('../config/constants')
 const { calculatePriority } = require('../utils/priorityHelper')
 
 // ===================================
+// CATEGORY TO DEPARTMENT MAP
+// ===================================
+const CATEGORY_DEPARTMENT_MAP = {
+  roads: 'Public Works',
+  water: 'Water Supply',
+  sanitation: 'Sanitation',
+  electricity: 'Electricity',
+  safety: 'Public Safety',
+  transport: 'Transport',
+  health: 'Health',
+  education: 'Education',
+  environment: 'Environment',
+  other: 'General'
+}
+
+// ===================================
 // GENERATE COMPLAINT ID
 // ===================================
 const generateComplaintId = async () => {
@@ -64,6 +80,9 @@ exports.createComplaint = async (req, res) => {
 
     const userId = req.user._id || req.user.id
 
+    // ✅ AUTO-ROUTE TO DEPARTMENT
+    const department = CATEGORY_DEPARTMENT_MAP[category] || 'General'
+
     const complaint = await Complaint.create({
       complaintId,
       title: title.trim(),
@@ -72,6 +91,7 @@ exports.createComplaint = async (req, res) => {
       priority,
       status: 'pending',
       citizen: userId,
+      department, // ✅ Saving the department
       location,
       affectedPeople,
       evidence,
@@ -79,7 +99,7 @@ exports.createComplaint = async (req, res) => {
       statusHistory: [
         {
           status: 'pending',
-          note: 'Complaint registered',
+          note: `Complaint registered and routed to ${department} department`,
           updatedBy: userId,
           updatedAt: new Date()
         }
@@ -104,6 +124,7 @@ exports.createComplaint = async (req, res) => {
 
 // ===================================
 // GET ALL COMPLAINTS
+// (Filtered by department for Department Admins)
 // ===================================
 exports.getAllComplaints = async (req, res) => {
   try {
@@ -113,12 +134,18 @@ exports.getAllComplaints = async (req, res) => {
       category,
       search,
       page = 1,
-      limit = 10,
+      limit = 100, // Increased default limit so dashboard can fetch more
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query
 
     const query = {}
+
+    // ✅ RESTRICT DEPARTMENT ADMINS
+    if (req.user.role === 'department_admin') {
+      query.department = req.user.department
+    }
+
     if (status && status !== 'all') query.status = status
     if (priority && priority !== 'all') query.priority = priority
     if (category && category !== 'all') query.category = category
@@ -224,19 +251,15 @@ exports.getMyComplaints = async (req, res) => {
 
 // ===================================
 // GET COMPLAINT BY ID
-// ✅ FIXED: Accepts both MongoDB _id AND complaintId (JV2026001)
 // ===================================
 exports.getComplaintById = async (req, res) => {
   try {
     const { id } = req.params
 
-    // 🎯 Determine if `id` is a MongoDB ObjectId or a complaintId
     let complaint
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      // It's a valid 24-char hex MongoDB ObjectId
       complaint = await Complaint.findById(id)
     } else {
-      // It's a complaintId like 'JV2026001'
       complaint = await Complaint.findOne({ complaintId: id })
     }
 
@@ -247,12 +270,10 @@ exports.getComplaintById = async (req, res) => {
       })
     }
 
-    // Populate references
     await complaint.populate('citizen', 'name email phone')
     await complaint.populate('assignedTo', 'name email phone role')
     await complaint.populate('statusHistory.updatedBy', 'name role')
 
-    // Authorization check
     const userId = (req.user._id || req.user.id).toString()
 
     const isOwner =
@@ -376,6 +397,61 @@ exports.getAssignedComplaints = async (req, res) => {
 }
 
 // ===================================
+// ASSIGN COMPLAINT (NEW)
+// PUT /api/complaints/:id/assign
+// ===================================
+exports.assignComplaint = async (req, res) => {
+  try {
+    const { assignedTo, department, note } = req.body
+
+    if (!assignedTo) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'Officer ID (assignedTo) is required'
+      })
+    }
+
+    const complaint = await Complaint.findById(req.params.id)
+    if (!complaint) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Complaint not found'
+      })
+    }
+
+    // Update assignment
+    complaint.assignedTo = assignedTo
+    complaint.assignedBy = req.user._id || req.user.id
+    complaint.assignedAt = new Date()
+    complaint.status = 'assigned'
+    if (department) complaint.department = department
+
+    // Log it
+    complaint.statusHistory.push({
+      status: 'assigned',
+      note: note || `Case assigned to officer`,
+      updatedBy: req.user._id || req.user.id,
+      updatedAt: new Date()
+    })
+
+    await complaint.save()
+    await complaint.populate('assignedTo', 'name email phone')
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Complaint assigned successfully',
+      complaint
+    })
+  } catch (error) {
+    console.error('Assign complaint error:', error)
+    res.status(HTTP_STATUS.SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to assign complaint'
+    })
+  }
+}
+
+// ===================================
 // UPDATE STATUS
 // ===================================
 exports.updateStatus = async (req, res) => {
@@ -454,6 +530,77 @@ exports.updateStatus = async (req, res) => {
     res.status(HTTP_STATUS.SERVER_ERROR).json({
       success: false,
       message: 'Failed to update status'
+    })
+  }
+}
+
+// ===================================
+// ADD NOTE
+// ===================================
+exports.addNote = async (req, res) => {
+  try {
+    const { text, type, isPrivate } = req.body
+
+    if (!text || !text.trim()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'Note text is required'
+      })
+    }
+
+    const complaint = await Complaint.findById(req.params.id)
+    if (!complaint) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Complaint not found'
+      })
+    }
+
+    const userId = (req.user._id || req.user.id).toString()
+    const isAssignedOfficer =
+      complaint.assignedTo && complaint.assignedTo.toString() === userId
+    const isAdmin = ['system_admin', 'department_admin'].includes(req.user.role)
+
+    if (!isAssignedOfficer && !isAdmin) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        message: 'Only assigned officer or admin can add notes'
+      })
+    }
+
+    if (!complaint.notes) {
+      complaint.notes = []
+    }
+
+    const newNote = {
+      text: text.trim(),
+      type: type || 'observation',
+      isPrivate: !!isPrivate,
+      author: req.user._id || req.user.id,
+      time: new Date()
+    }
+
+    complaint.notes.push(newNote)
+
+    complaint.statusHistory.push({
+      status: complaint.status,
+      note: `[${type || 'note'}] ${text.trim()}`,
+      updatedBy: req.user._id || req.user.id,
+      updatedAt: new Date()
+    })
+
+    await complaint.save()
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      message: 'Note added successfully',
+      note: newNote
+    })
+  } catch (error) {
+    console.error('Add note error:', error)
+    res.status(HTTP_STATUS.SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to add note'
     })
   }
 }

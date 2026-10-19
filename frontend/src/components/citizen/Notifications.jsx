@@ -1,155 +1,185 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
 import './Notifications.css'
 
 const Notifications = () => {
-  const navigate = useNavigate()
-
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/citizen/dashboard' },
     { icon: '📝', label: 'Submit Complaint', path: '/citizen/submit' },
     { icon: '📋', label: 'My Complaints', path: '/citizen/complaints' },
     { icon: '🔍', label: 'Track Complaint', path: '/citizen/track' },
-    { icon: '🔔', label: 'Notifications', path: '/citizen/notifications', badge: 5 },
+    { icon: '🔔', label: 'Notifications', path: '/citizen/notifications' },
     { icon: '👤', label: 'My Profile', path: '/citizen/profile' }
   ]
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'status', icon: '🚧', title: 'Complaint In Progress', message: 'Your complaint JV2026001 is now being worked on', time: '5 min ago', read: false, complaintId: 'JV2026001', color: '#3182CE' },
-    { id: 2, type: 'assigned', icon: '👤', title: 'Officer Assigned', message: 'Officer Ravi Kumar has been assigned to JV2026004', time: '1 hour ago', read: false, complaintId: 'JV2026004', color: '#805AD5' },
-    { id: 3, type: 'resolved', icon: '✅', title: 'Complaint Resolved', message: 'Your complaint JV2026002 has been resolved. Please give feedback!', time: '3 hours ago', read: false, complaintId: 'JV2026002', color: '#38A169' },
-    { id: 4, type: 'urgent', icon: '🚨', title: 'Emergency Acknowledged', message: 'Your emergency report JV2026003 has been acknowledged', time: '5 hours ago', read: false, complaintId: 'JV2026003', color: '#E53E3E' },
-    { id: 5, type: 'feedback', icon: '⭐', title: 'Feedback Request', message: 'How was your experience with complaint JV2025101?', time: '1 day ago', read: true, complaintId: 'JV2025101', color: '#F7931E' },
-    { id: 6, type: 'system', icon: '🔔', title: 'Welcome to JanVoice!', message: 'Your account is set up. Start by submitting your first complaint.', time: '3 days ago', read: true, complaintId: null, color: '#4A5568' },
-    { id: 7, type: 'status', icon: '🔍', title: 'Investigation Started', message: 'Officer has started investigating JV2026004', time: '4 days ago', read: true, complaintId: 'JV2026004', color: '#805AD5' }
-  ])
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('all')
 
-  const [filter, setFilter] = useState('all')
+  // ===================================
+  // FETCH REAL NOTIFICATIONS
+  // (Fallback to empty array if endpoint doesn't exist yet)
+  // ===================================
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get('/notifications')
+        const raw = res.data?.notifications || res.data?.data || []
+        setNotifications(raw)
+      } catch (err) {
+        // Endpoint may not exist yet — silently fall back to empty
+        if (err.response?.status !== 404) {
+          console.warn('Notifications fetch error:', err.message)
+        }
+        setNotifications([])
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+    fetchNotifications()
+  }, [])
 
-  const filtered = notifications.filter((n) => {
-    if (filter === 'all') return true
-    if (filter === 'unread') return !n.read
-    return n.type === filter
+  const unreadCount = notifications.filter((n) => n.unread).length
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (activeTab === 'all') return true
+    if (activeTab === 'unread') return n.unread
+    if (activeTab === 'resolved') return n.type === 'resolved'
+    if (activeTab === 'urgent') return n.priority === 'emergency'
+    return n.type === activeTab
   })
 
-  const markAsRead = (id) => {
+  const handleMarkAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
+  }
+
+  const handleMarkRead = (id) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
     )
   }
 
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  }
-
-  const deleteNotification = (id) => {
+  const handleDelete = (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
   }
 
-  const handleClick = (n) => {
-    markAsRead(n.id)
-    if (n.complaintId) {
-      navigate(`/citizen/complaint/${n.complaintId}`)
-    }
+  const getTabCount = (tab) => {
+    if (tab === 'all') return notifications.length
+    if (tab === 'unread') return unreadCount
+    if (tab === 'resolved') return notifications.filter((n) => n.type === 'resolved').length
+    if (tab === 'urgent') return notifications.filter((n) => n.priority === 'emergency').length
+    return 0
   }
 
   return (
     <DashboardLayout role="citizen" menuItems={menuItems} title="Notifications">
-      <div className="notifications-container">
+      <div className="nf-container">
         {/* Header */}
-        <div className="notif-header">
-          <div>
-            <h2 className="notif-title">
-              🔔 Notifications
-              {unreadCount > 0 && (
-                <span className="unread-pill">{unreadCount} new</span>
-              )}
-            </h2>
-            <p className="notif-subtitle">
-              Stay updated on your complaints and system activity
-            </p>
+        <div className="nf-header">
+          <div className="nf-header-left">
+            <div className="nf-header-icon">🔔</div>
+            <div>
+              <h1 className="nf-header-title">
+                Notifications
+                {unreadCount > 0 && (
+                  <span className="nf-badge">{unreadCount} new</span>
+                )}
+              </h1>
+              <p className="nf-header-sub">
+                Stay updated on your complaints and system activity
+              </p>
+            </div>
           </div>
           {unreadCount > 0 && (
-            <button className="btn-mark-all" onClick={markAllRead}>
+            <button className="nf-mark-all-btn" onClick={handleMarkAllRead}>
               ✓ Mark all as read
             </button>
           )}
         </div>
 
-        {/* Filters */}
-        <div className="notif-filters">
+        {/* Tabs */}
+        <div className="nf-tabs">
           {[
-            { id: 'all', label: 'All', count: notifications.length },
-            { id: 'unread', label: 'Unread', count: unreadCount },
-            { id: 'status', label: 'Status', count: notifications.filter((n) => n.type === 'status').length },
-            { id: 'resolved', label: 'Resolved', count: notifications.filter((n) => n.type === 'resolved').length },
-            { id: 'urgent', label: 'Urgent', count: notifications.filter((n) => n.type === 'urgent').length }
-          ].map((f) => (
+            { id: 'all', label: 'All' },
+            { id: 'unread', label: 'Unread' },
+            { id: 'resolved', label: 'Resolved' },
+            { id: 'urgent', label: 'Urgent' }
+          ].map((tab) => (
             <button
-              key={f.id}
-              className={`notif-filter ${filter === f.id ? 'active' : ''}`}
-              onClick={() => setFilter(f.id)}
+              key={tab.id}
+              className={`nf-tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
             >
-              {f.label}
-              {f.count > 0 && <span className="filter-count">{f.count}</span>}
+              {tab.label}
+              <span className="nf-tab-count">{getTabCount(tab.id)}</span>
             </button>
           ))}
         </div>
 
-        {/* Notifications List */}
-        {filtered.length === 0 ? (
-          <div className="notif-empty">
-            <div className="empty-icon">🔕</div>
-            <h3>No Notifications</h3>
-            <p>
-              {filter === 'all'
-                ? "You don't have any notifications yet."
-                : `No ${filter} notifications.`}
-            </p>
-          </div>
-        ) : (
-          <div className="notif-list">
-            {filtered.map((n) => (
+        {/* Notification List */}
+        <div className="nf-list">
+          {loading ? (
+            <div className="nf-empty">
+              <div className="nf-empty-icon">⏳</div>
+              <h3 className="nf-empty-title">Loading notifications...</h3>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="nf-empty">
+              <div className="nf-empty-icon">📭</div>
+              <h3 className="nf-empty-title">
+                {activeTab === 'all'
+                  ? "You're all caught up!"
+                  : 'No notifications here'}
+              </h3>
+              <p className="nf-empty-sub">
+                {activeTab === 'all'
+                  ? 'Notifications will appear here when your complaints get updated.'
+                  : 'Try switching to a different tab or check back later.'}
+              </p>
+            </div>
+          ) : (
+            filteredNotifications.map((notif) => (
               <div
-                key={n.id}
-                className={`notif-item ${!n.read ? 'unread' : ''}`}
-                onClick={() => handleClick(n)}
+                key={notif.id}
+                className={`nf-item ${notif.unread ? 'unread' : ''}`}
+                onClick={() => handleMarkRead(notif.id)}
               >
-                <div className="notif-icon" style={{ background: n.color + '20', color: n.color }}>
-                  {n.icon}
+                <div
+                  className="nf-item-icon"
+                  style={{ background: notif.iconBg, color: notif.iconColor }}
+                >
+                  {notif.icon}
                 </div>
-                <div className="notif-body">
-                  <div className="notif-item-header">
-                    <div className="notif-item-title">
-                      {!n.read && <span className="unread-dot" style={{ background: n.color }}></span>}
-                      {n.title}
-                    </div>
-                    <div className="notif-time">{n.time}</div>
+
+                <div className="nf-item-content">
+                  <div className="nf-item-header">
+                    <h3 className="nf-item-title">{notif.title}</h3>
+                    {notif.unread && <span className="nf-dot"></span>}
                   </div>
-                  <div className="notif-message">{n.message}</div>
-                  {n.complaintId && (
-                    <div className="notif-complaint-id">
-                      📋 {n.complaintId}
-                    </div>
-                  )}
+                  <p className="nf-item-message">{notif.message}</p>
+                  <div className="nf-item-meta">
+                    <span className="nf-item-tag">📋 {notif.complaintId}</span>
+                    <span className="nf-item-time">⏰ {notif.time}</span>
+                  </div>
                 </div>
+
                 <button
-                  className="notif-delete"
+                  className="nf-item-close"
                   onClick={(e) => {
                     e.stopPropagation()
-                    deleteNotification(n.id)
+                    handleDelete(notif.id)
                   }}
                   title="Delete"
                 >
-                  ✖
+                  ×
                 </button>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </DashboardLayout>
   )

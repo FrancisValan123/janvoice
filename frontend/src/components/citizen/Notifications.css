@@ -2,99 +2,119 @@
    NOTIFICATIONS PAGE
    ================================ */
 
-.notifications-container {
-  max-width: 1000px;
+.nf-container {
+  max-width: 900px;
   margin: 0 auto;
 }
 
-/* Header */
-.notifications-header {
+/* ================================
+   HEADER
+   ================================ */
+.nf-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 24px;
   background: var(--bg-surface);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
-.notifications-header-left {
+.nf-header-left {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
+  min-width: 240px;
 }
 
-.notifications-icon {
-  font-size: 32px;
+.nf-header-icon {
+  font-size: 36px;
   flex-shrink: 0;
+  animation: nf-bell-shake 4s ease-in-out infinite;
 }
 
-.notifications-title {
+@keyframes nf-bell-shake {
+  0%, 90%, 100% { transform: rotate(0deg); }
+  92% { transform: rotate(-15deg); }
+  94% { transform: rotate(15deg); }
+  96% { transform: rotate(-10deg); }
+  98% { transform: rotate(10deg); }
+}
+
+.nf-header-title {
   font-size: 22px;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin: 0 0 4px;
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
-.notifications-badge {
-  padding: 3px 10px;
+.nf-badge {
+  font-size: 11px;
+  font-weight: 800;
   background: #FF6B35;
   color: white;
+  padding: 3px 10px;
   border-radius: 10px;
-  font-size: 12px;
-  font-weight: 800;
+  letter-spacing: 0.3px;
 }
 
-.notifications-subtitle {
+.nf-header-sub {
   font-size: 13px;
   color: var(--text-tertiary);
+  margin: 0;
 }
 
-.btn-mark-read {
-  padding: 10px 20px;
+.nf-mark-all-btn {
+  padding: 10px 18px;
   background: var(--bg-surface-secondary);
-  color: var(--text-secondary);
   border: 2px solid var(--border-light);
+  color: var(--text-secondary);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
-.btn-mark-read:hover {
+.nf-mark-all-btn:hover {
   border-color: #FF6B35;
   color: #FF6B35;
+  transform: translateY(-1px);
 }
 
-/* Filter Tabs */
-.notifications-tabs {
+/* ================================
+   TABS
+   ================================ */
+.nf-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   padding: 6px;
   background: var(--bg-surface);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: var(--shadow-sm);
   margin-bottom: 16px;
   overflow-x: auto;
 }
 
-.notif-tab {
+.nf-tab {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: transparent;
   border: none;
+  background: transparent;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-tertiary);
   cursor: pointer;
@@ -103,158 +123,247 @@
   transition: all 0.3s ease;
 }
 
-.notif-tab:hover {
+.nf-tab:hover {
   color: #FF6B35;
+  background: var(--bg-hover);
 }
 
-.notif-tab.active {
+.nf-tab.active {
   background: linear-gradient(135deg, #FF6B35, #F7931E);
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.25);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
 
-.notif-tab-count {
-  padding: 2px 8px;
-  background: var(--bg-surface-secondary);
-  color: var(--text-secondary);
+.nf-tab-count {
+  padding: 1px 8px;
+  background: rgba(0, 0, 0, 0.08);
   border-radius: 10px;
   font-size: 11px;
   font-weight: 800;
+  min-width: 20px;
+  text-align: center;
 }
 
-.notif-tab.active .notif-tab-count {
-  background: rgba(255, 255, 255, 0.25);
+.nf-tab.active .nf-tab-count {
+  background: rgba(255, 255, 255, 0.3);
   color: white;
 }
 
-/* Notification List */
-.notifications-list {
+html.dark-mode .nf-tab-count {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .nf-tab.active .nf-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ================================
+   LIST
+   ================================ */
+.nf-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.notification-item {
+/* ================================
+   NOTIFICATION ITEM
+   ================================ */
+.nf-item {
   display: flex;
   align-items: flex-start;
   gap: 14px;
   padding: 18px;
   background: var(--bg-surface);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: var(--shadow-sm);
   border-left: 4px solid transparent;
-  transition: all 0.3s ease;
   cursor: pointer;
+  transition: all 0.3s ease;
   position: relative;
 }
 
-.notification-item:hover {
+.nf-item:hover {
   transform: translateX(4px);
   box-shadow: var(--shadow-md);
 }
 
-.notification-item.unread {
+.nf-item.unread {
   border-left-color: #FF6B35;
   background: var(--bg-surface-secondary);
 }
 
-.notification-item.unread::before {
-  content: '';
-  position: absolute;
-  top: 20px;
-  left: 12px;
-  width: 6px;
-  height: 6px;
-  background: #FF6B35;
-  border-radius: 50%;
-}
-
-.notification-icon {
-  width: 44px;
-  height: 44px;
+.nf-item-icon {
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 22px;
   flex-shrink: 0;
 }
 
-.notification-content {
+.nf-item-content {
   flex: 1;
   min-width: 0;
 }
 
-.notification-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
+.nf-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 4px;
 }
 
-.notification-message {
+.nf-item-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.nf-dot {
+  width: 8px;
+  height: 8px;
+  background: #FF6B35;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: nf-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nf-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.nf-item-message {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.5;
-  margin-bottom: 6px;
+  margin: 0 0 8px;
 }
 
-.notification-meta {
+.nf-item-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-size: 11px;
   color: var(--text-tertiary);
   flex-wrap: wrap;
 }
 
-.notification-tag {
-  padding: 2px 8px;
+.nf-item-tag {
+  padding: 3px 10px;
   background: var(--bg-surface-tertiary);
-  color: var(--text-secondary);
   border-radius: 8px;
   font-weight: 700;
+  color: var(--text-secondary);
 }
 
-.notification-close {
-  background: none;
+.nf-item-time {
+  font-weight: 600;
+}
+
+.nf-item-close {
+  background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 18px;
+  font-size: 22px;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  line-height: 1;
 }
 
-.notification-close:hover {
+.nf-item-close:hover {
   background: rgba(229, 62, 62, 0.15);
   color: #E53E3E;
 }
 
-/* Empty State */
-.notifications-empty {
+/* ================================
+   EMPTY STATE
+   ================================ */
+.nf-empty {
   text-align: center;
-  padding: 80px 20px;
+  padding: 80px 24px;
   background: var(--bg-surface);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: var(--shadow-sm);
 }
 
-.notifications-empty-icon {
+.nf-empty-icon {
   font-size: 64px;
   margin-bottom: 16px;
+  opacity: 0.7;
 }
 
-.notifications-empty h3 {
+.nf-empty-title {
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin: 0 0 8px;
 }
 
-.notifications-empty p {
+.nf-empty-sub {
   font-size: 14px;
   color: var(--text-tertiary);
+  margin: 0;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+@media (max-width: 640px) {
+  .nf-header {
+    padding: 18px;
+  }
+
+  .nf-header-icon {
+    font-size: 28px;
+  }
+
+  .nf-header-title {
+    font-size: 18px;
+  }
+
+  .nf-mark-all-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .nf-tabs {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .nf-tab {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .nf-item {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .nf-item-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .nf-item-title {
+    font-size: 14px;
+  }
+
+  .nf-item-message {
+    font-size: 12px;
+  }
 }

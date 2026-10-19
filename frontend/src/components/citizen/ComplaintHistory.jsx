@@ -1,6 +1,30 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
+import './ComplaintHistory.css'
+
+// ===================================
+// CATEGORY HELPERS
+// ===================================
+const CATEGORY_MAP = {
+  roads: { name: 'Roads & Infrastructure', icon: '🛣️' },
+  water: { name: 'Water Supply', icon: '💧' },
+  sanitation: { name: 'Sanitation & Waste', icon: '🗑️' },
+  electricity: { name: 'Electricity', icon: '⚡' },
+  safety: { name: 'Public Safety', icon: '🚨' },
+  transport: { name: 'Transport', icon: '🚌' },
+  health: { name: 'Health', icon: '🏥' },
+  education: { name: 'Education', icon: '📚' },
+  environment: { name: 'Environment', icon: '🌳' },
+  other: { name: 'Other', icon: '📁' }
+}
+
+const getCategoryDisplay = (category) => {
+  if (!category) return 'General'
+  const normalized = category.toLowerCase().trim()
+  return CATEGORY_MAP[normalized]?.name || category
+}
 
 const ComplaintHistory = () => {
   const navigate = useNavigate()
@@ -14,169 +38,235 @@ const ComplaintHistory = () => {
     { icon: '👤', label: 'My Profile', path: '/citizen/profile' }
   ]
 
-  const [history] = useState([
-    { id: 'JV2025101', title: 'Street light issue', category: 'Roads', status: 'resolved', priority: 'normal', date: '2025-08-15', resolvedDate: '2025-08-22', days: 7, rating: 5 },
-    { id: 'JV2025098', title: 'Water supply disruption', category: 'Water', status: 'resolved', priority: 'high', date: '2025-07-10', resolvedDate: '2025-07-15', days: 5, rating: 4 },
-    { id: 'JV2025089', title: 'Garbage collection delay', category: 'Sanitation', status: 'resolved', priority: 'normal', date: '2025-06-05', resolvedDate: '2025-06-12', days: 7, rating: 5 },
-    { id: 'JV2025075', title: 'Road repair request', category: 'Roads', status: 'resolved', priority: 'high', date: '2025-05-20', resolvedDate: '2025-06-01', days: 12, rating: 3 },
-    { id: 'JV2025060', title: 'Broken park bench', category: 'Public Space', status: 'resolved', priority: 'low', date: '2025-04-10', resolvedDate: '2025-04-18', days: 8, rating: 4 },
-    { id: 'JV2025045', title: 'Drainage blockage', category: 'Sanitation', status: 'rejected', priority: 'normal', date: '2025-03-05', resolvedDate: '2025-03-06', days: 1, rating: null }
-  ])
+  const [complaints, setComplaints] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [selectedYear, setSelectedYear] = useState('all')
 
-  const [yearFilter, setYearFilter] = useState('all')
+  // ===================================
+  // FETCH REAL COMPLAINTS
+  // ===================================
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-  const years = ['all', '2026', '2025', '2024']
+        const response = await api.get('/complaints/my')
+        const rawData =
+          response.data?.data ||
+          response.data?.complaints ||
+          (Array.isArray(response.data) ? response.data : [])
 
-  const filtered = history.filter((h) => {
-    if (yearFilter === 'all') return true
-    return h.date.startsWith(yearFilter)
-  })
+        // Format each complaint for display
+        const formatted = rawData.map((c) => {
+          const createdAt = c.createdAt ? new Date(c.createdAt) : null
+          const resolvedAt = c.resolvedAt ? new Date(c.resolvedAt) : null
 
-  const stats = {
-    total: filtered.length,
-    avgDays:
-      filtered.filter((h) => h.status === 'resolved').length > 0
-        ? (
-            filtered.filter((h) => h.status === 'resolved').reduce((s, h) => s + h.days, 0) /
-            filtered.filter((h) => h.status === 'resolved').length
-          ).toFixed(1)
-        : 0,
-    avgRating:
-      filtered.filter((h) => h.rating).length > 0
-        ? (
-            filtered.filter((h) => h.rating).reduce((s, h) => s + h.rating, 0) /
-            filtered.filter((h) => h.rating).length
-          ).toFixed(1)
-        : 0
+          // Calculate days between submitted and resolved
+          let days = null
+          if (createdAt && resolvedAt) {
+            days = Math.round((resolvedAt - createdAt) / (1000 * 60 * 60 * 24))
+          }
+
+          return {
+            _id: c._id,
+            id: c.complaintId || c._id,
+            title: c.title || 'Untitled',
+            category: getCategoryDisplay(c.category),
+            submitted: createdAt ? createdAt.toISOString().split('T')[0] : 'N/A',
+            resolved: resolvedAt ? resolvedAt.toISOString().split('T')[0] : '—',
+            days: days,
+            rating: c.feedback?.rating || 0,
+            status: c.status || 'pending',
+            year: createdAt ? createdAt.getFullYear() : null
+          }
+        })
+
+        // Sort newest first
+        formatted.sort((a, b) => {
+          if (a.submitted === 'N/A') return 1
+          if (b.submitted === 'N/A') return -1
+          return new Date(b.submitted) - new Date(a.submitted)
+        })
+
+        setComplaints(formatted)
+      } catch (err) {
+        console.error('Failed to fetch complaint history:', err)
+        setError(
+          err.response?.data?.message ||
+            'Failed to load complaint history. Please try again.'
+        )
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchComplaints()
+  }, [])
+
+  // ===================================
+  // GET AVAILABLE YEARS
+  // ===================================
+  const availableYears = [...new Set(complaints.map((c) => c.year).filter(Boolean))]
+    .sort((a, b) => b - a) // Descending
+
+  // ===================================
+  // FILTER BY SELECTED YEAR
+  // ===================================
+  const filteredComplaints =
+    selectedYear === 'all'
+      ? complaints
+      : complaints.filter((c) => c.year === parseInt(selectedYear))
+
+  const getStatusConfig = (status) => {
+    const map = {
+      pending: { label: 'Pending', color: '#ED8936', bg: '#FEEBC8', icon: '⏳' },
+      assigned: { label: 'Assigned', color: '#4299E1', bg: '#BEE3F8', icon: '👤' },
+      investigating: { label: 'Investigating', color: '#805AD5', bg: '#E9D8FD', icon: '🔍' },
+      'in-progress': { label: 'In Progress', color: '#3182CE', bg: '#BEE3F8', icon: '🚧' },
+      resolved: { label: 'Resolved', color: '#38A169', bg: '#C6F6D5', icon: '✅' },
+      rejected: { label: 'Rejected', color: '#E53E3E', bg: '#FED7D7', icon: '❌' },
+      escalated: { label: 'Escalated', color: '#C53030', bg: '#FED7D7', icon: '🚨' }
+    }
+    return map[status] || map.pending
+  }
+
+  const renderStars = (rating) => {
+    if (!rating || rating === 0) return '—'
+    return '⭐'.repeat(rating)
   }
 
   return (
     <DashboardLayout role="citizen" menuItems={menuItems} title="Complaint History">
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px', boxShadow: '0 8px 24px rgba(26, 32, 44, 0.2)' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>
-            📜 Complaint History
-          </h2>
-          <p style={{ fontSize: '14px', opacity: 0.9 }}>
-            View all your past complaints and their outcomes
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#FF6B35', lineHeight: 1, marginBottom: '6px' }}>{stats.total}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Closed</div>
-          </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '6px' }}>{stats.avgDays}d</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Avg Resolution</div>
-          </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#F7931E', lineHeight: 1, marginBottom: '6px' }}>⭐ {stats.avgRating}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Avg Rating</div>
-          </div>
-        </div>
-
-        {/* Year Filter */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          {years.map((y) => (
+      <div className="ch-container">
+        {/* Year Tabs */}
+        <div className="ch-tabs">
+          <button
+            className={`ch-tab ${selectedYear === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedYear('all')}
+          >
+            📅 All Years
+          </button>
+          {availableYears.map((year) => (
             <button
-              key={y}
-              onClick={() => setYearFilter(y)}
-              style={{
-                padding: '8px 18px',
-                background: yearFilter === y ? 'linear-gradient(135deg, #FF6B35, #F7931E)' : 'white',
-                color: yearFilter === y ? 'white' : '#4a5568',
-                border: 'none',
-                borderRadius: '10px',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                boxShadow: yearFilter === y ? '0 4px 12px rgba(255, 107, 53, 0.3)' : '0 2px 8px rgba(0,0,0,0.04)'
-              }}
+              key={year}
+              className={`ch-tab ${selectedYear === String(year) ? 'active' : ''}`}
+              onClick={() => setSelectedYear(String(year))}
             >
-              {y === 'all' ? '📅 All Years' : y}
+              {year}
             </button>
           ))}
         </div>
 
-        {/* Table */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {['ID', 'Title', 'Category', 'Submitted', 'Resolved', 'Days', 'Rating', 'Status', ''].map((h) => (
-                    <th key={h} style={{ textAlign: 'left', padding: '12px', fontSize: '11px', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((h) => (
-                  <tr key={h.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px 12px', fontSize: '12px', fontWeight: '800', color: '#1a202c' }}>{h.id}</td>
-                    <td style={{ padding: '16px 12px', fontSize: '13px', color: '#1a202c', fontWeight: '600' }}>{h.title}</td>
-                    <td style={{ padding: '16px 12px', fontSize: '12px', color: '#718096' }}>{h.category}</td>
-                    <td style={{ padding: '16px 12px', fontSize: '12px', color: '#718096' }}>{h.date}</td>
-                    <td style={{ padding: '16px 12px', fontSize: '12px', color: '#718096' }}>{h.resolvedDate}</td>
-                    <td style={{ padding: '16px 12px', fontSize: '12px', fontWeight: '700', color: '#38A169' }}>{h.days}d</td>
-                    <td style={{ padding: '16px 12px', fontSize: '12px' }}>
-                      {h.rating ? '⭐'.repeat(h.rating) : '—'}
-                    </td>
-                    <td style={{ padding: '16px 12px' }}>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        background: h.status === 'resolved' ? '#c6f6d5' : '#fed7d7',
-                        color: h.status === 'resolved' ? '#276749' : '#9b2c2c',
-                        textTransform: 'capitalize'
-                      }}>
-                        {h.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px 12px' }}>
-                      <button
-                        onClick={() => navigate(`/citizen/complaint/${h.id}`)}
-                        style={{ padding: '6px 12px', background: '#f7fafc', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '11px', fontWeight: '700', color: '#FF6B35', cursor: 'pointer', fontFamily: 'inherit' }}
-                      >
-                        View →
-                      </button>
-                    </td>
+        {/* Card with Table */}
+        <div className="ch-card">
+          {loading ? (
+            <div className="ch-empty">
+              <div className="ch-empty-icon">⏳</div>
+              <h3 className="ch-empty-title">Loading your history...</h3>
+            </div>
+          ) : error ? (
+            <div className="ch-empty">
+              <div className="ch-empty-icon">⚠️</div>
+              <h3 className="ch-empty-title">{error}</h3>
+            </div>
+          ) : filteredComplaints.length === 0 ? (
+            <div className="ch-empty">
+              <div className="ch-empty-icon">📭</div>
+              <h3 className="ch-empty-title">No complaints yet</h3>
+              <p className="ch-empty-sub">
+                {selectedYear === 'all'
+                  ? "You haven't submitted any complaints yet."
+                  : `No complaints found for ${selectedYear}.`}
+              </p>
+              <Link to="/citizen/submit" className="ch-empty-btn">
+                📝 Submit a Complaint
+              </Link>
+            </div>
+          ) : (
+            <div className="ch-table-wrapper">
+              <table className="ch-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Submitted</th>
+                    <th>Resolved</th>
+                    <th>Days</th>
+                    <th>Rating</th>
+                    <th>Status</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {filtered.length === 0 && (
-              <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '56px', marginBottom: '12px' }}>📭</div>
-                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1a202c' }}>No History Found</h3>
-              </div>
-            )}
-          </div>
+                </thead>
+                <tbody>
+                  {filteredComplaints.map((c) => {
+                    const status = getStatusConfig(c.status)
+                    return (
+                      <tr key={c._id}>
+                        <td>
+                          <span className="ch-id">{c.id}</span>
+                        </td>
+                        <td>
+                          <span className="ch-title">{c.title}</span>
+                        </td>
+                        <td>
+                          <span className="ch-category">{c.category}</span>
+                        </td>
+                        <td>{c.submitted}</td>
+                        <td>{c.resolved}</td>
+                        <td>
+                          {c.days !== null ? (
+                            <span className="ch-days">{c.days}d</span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td>
+                          <span className="ch-rating">{renderStars(c.rating)}</span>
+                        </td>
+                        <td>
+                          <span
+                            className="ch-status"
+                            style={{ background: status.bg, color: status.color }}
+                          >
+                            {status.label}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            className="ch-view-btn"
+                            onClick={() => navigate(`/citizen/complaints/${c._id}`)}
+                          >
+                            View →
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* CTA */}
-        <div style={{ marginTop: '20px', padding: '20px', background: 'linear-gradient(135deg, #FFF5F0, #FFE8D6)', borderLeft: '4px solid #FF6B35', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#1a202c', marginBottom: '4px' }}>
-              📋 Looking for current complaints?
-            </div>
-            <div style={{ fontSize: '13px', color: '#744210' }}>
-              View your active complaints and their live status
+        {/* Info Box */}
+        {!loading && !error && complaints.length > 0 && (
+          <div className="ch-info-box">
+            <span className="ch-info-icon">💡</span>
+            <div className="ch-info-text">
+              <strong>Looking for current complaints?</strong>
+              <p>
+                This page shows only your past complaint history. To view or
+                manage active complaints, go to{' '}
+                <Link to="/citizen/complaints" className="ch-info-link">
+                  My Complaints →
+                </Link>
+              </p>
             </div>
           </div>
-          <Link to="/citizen/complaints" style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #FF6B35, #F7931E)', color: 'white', borderRadius: '10px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)' }}>
-            My Complaints →
-          </Link>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   )

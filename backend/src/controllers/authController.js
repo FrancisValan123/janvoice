@@ -12,11 +12,13 @@ const { sendEmail, emailTemplates } = require('../config/email')
 const { HTTP_STATUS } = require('../config/constants')
 
 // ===================================
-// REGISTER
+// REGISTER — CITIZEN ONLY
 // ===================================
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone, role = 'citizen' } = req.body
+    const { name, email, password, phone } = req.body
+
+    const role = 'citizen'
 
     if (!name || !email || !password) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -68,6 +70,7 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        department: user.department, // ✅ ADDED
         isVerified: user.isVerified,
         twoFactorEnabled: false,
         createdAt: user.createdAt
@@ -83,7 +86,7 @@ exports.register = async (req, res) => {
 }
 
 // ===================================
-// LOGIN (Now checks for 2FA)
+// LOGIN
 // ===================================
 exports.login = async (req, res) => {
   try {
@@ -122,7 +125,6 @@ exports.login = async (req, res) => {
       })
     }
 
-    // ✅ If 2FA is enabled, DON'T issue token yet — ask for the code
     if (user.twoFactorEnabled) {
       return res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -133,7 +135,6 @@ exports.login = async (req, res) => {
       })
     }
 
-    // Otherwise, proceed with normal login
     user.lastLogin = new Date()
     await user.save()
 
@@ -153,6 +154,7 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        department: user.department, // ✅ ADDED
         profileImage: user.profileImage,
         isVerified: user.isVerified,
         twoFactorEnabled: user.twoFactorEnabled
@@ -168,9 +170,7 @@ exports.login = async (req, res) => {
 }
 
 // ===================================
-// VERIFY 2FA DURING LOGIN (Completes the login)
-// POST /api/auth/2fa/login
-// Body: { userId, token }
+// VERIFY 2FA DURING LOGIN
 // ===================================
 exports.verifyTwoFALogin = async (req, res) => {
   try {
@@ -195,17 +195,14 @@ exports.verifyTwoFALogin = async (req, res) => {
 
     let verified = false
 
-    // ✅ Check if user provided a backup code
     if (backupCode) {
       const codeUpper = backupCode.trim().toUpperCase()
       const codeIndex = user.twoFactorBackupCodes.indexOf(codeUpper)
       if (codeIndex !== -1) {
         verified = true
-        // Remove used backup code
         user.twoFactorBackupCodes.splice(codeIndex, 1)
       }
     } else if (code) {
-      // ✅ Verify TOTP code
       verified = speakeasy.totp.verify({
         secret: user.twoFactorSecret,
         encoding: 'base32',
@@ -240,6 +237,7 @@ exports.verifyTwoFALogin = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        department: user.department, // ✅ ADDED
         profileImage: user.profileImage,
         isVerified: user.isVerified,
         twoFactorEnabled: user.twoFactorEnabled
@@ -255,8 +253,7 @@ exports.verifyTwoFALogin = async (req, res) => {
 }
 
 // ===================================
-// 2FA — SETUP (Generate QR code + secret)
-// GET /api/auth/2fa/setup
+// 2FA — SETUP
 // ===================================
 exports.setupTwoFA = async (req, res) => {
   try {
@@ -277,18 +274,15 @@ exports.setupTwoFA = async (req, res) => {
       })
     }
 
-    // Generate TOTP secret
     const secret = speakeasy.generateSecret({
       name: `JanVoice (${user.email})`,
       issuer: 'JanVoice',
       length: 32
     })
 
-    // Save secret temporarily (not yet enabled)
     user.twoFactorSecret = secret.base32
     await user.save()
 
-    // Generate QR code as a data URL
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url)
 
     res.status(HTTP_STATUS.OK).json({
@@ -308,8 +302,6 @@ exports.setupTwoFA = async (req, res) => {
 
 // ===================================
 // 2FA — VERIFY & ENABLE
-// POST /api/auth/2fa/verify
-// Body: { token: '123456' }
 // ===================================
 exports.verifyTwoFA = async (req, res) => {
   try {
@@ -346,7 +338,6 @@ exports.verifyTwoFA = async (req, res) => {
       })
     }
 
-    // Generate 8 backup codes
     const backupCodes = []
     for (let i = 0; i < 8; i++) {
       backupCodes.push(
@@ -374,7 +365,6 @@ exports.verifyTwoFA = async (req, res) => {
 
 // ===================================
 // 2FA — DISABLE
-// POST /api/auth/2fa/disable
 // ===================================
 exports.disableTwoFA = async (req, res) => {
   try {
@@ -428,6 +418,7 @@ exports.getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        department: user.department, // ✅ ADDED
         profileImage: user.profileImage,
         isVerified: user.isVerified,
         twoFactorEnabled: user.twoFactorEnabled,

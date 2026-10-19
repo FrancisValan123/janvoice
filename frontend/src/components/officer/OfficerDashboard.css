@@ -1,3 +1,7 @@
+/* ===================================
+   OFFICER DASHBOARD
+   =================================== */
+
 .od-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -6,7 +10,9 @@
   gap: 24px;
 }
 
-/* Loading */
+/* ===================================
+   LOADING
+   =================================== */
 .od-loading {
   display: flex;
   flex-direction: column;
@@ -19,16 +25,23 @@
 .od-spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #2C5282;
+  border: 4px solid var(--border-light);
+  border-top-color: #4299E1;
   border-radius: 50%;
   animation: od-spin 0.8s linear infinite;
 }
 
 @keyframes od-spin { to { transform: rotate(360deg); } }
-.od-loading p { color: #718096; font-size: 14px; font-weight: 600; }
 
-/* Welcome Banner */
+.od-loading p {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ===================================
+   WELCOME BANNER
+   =================================== */
 .od-welcome {
   position: relative;
   background: linear-gradient(135deg, #2C5282 0%, #4299E1 60%, #63B3ED 100%);
@@ -54,15 +67,27 @@
   font-weight: 800;
   margin-bottom: 8px;
   line-height: 1.2;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
+/* ✅ FIXED: Subtitle is now fully readable + numbers in gold */
 .od-welcome-sub {
   font-size: 15px;
-  opacity: 0.95;
+  color: #FFFFFF;
+  opacity: 1;
+  font-weight: 500;
   max-width: 520px;
+  line-height: 1.5;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.od-welcome-sub strong { color: #BEE3F8; font-weight: 800; }
+/* ✅ FIXED: Numbers "8" and "2" now pop in gold */
+.od-welcome-sub strong {
+  color: #FFD700;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
 
 .od-welcome-actions {
   display: flex;
@@ -92,7 +117,10 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.od-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }
+.od-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
 
 .od-btn-secondary {
   background: rgba(255, 255, 255, 0.15);
@@ -101,20 +129,36 @@
   backdrop-filter: blur(10px);
 }
 
-.od-btn-secondary:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+.od-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
 
-.od-welcome-decoration { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-.od-circle { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.1); }
+.od-welcome-decoration {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.od-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .od-c1 { width: 300px; height: 300px; top: -120px; right: -80px; }
 .od-c2 { width: 180px; height: 180px; bottom: -60px; right: 250px; background: rgba(255, 255, 255, 0.08); }
 
-/* Alert */
+/* ===================================
+   EMERGENCY ALERT
+   =================================== */
 .od-alert {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 18px 22px;
-  background: linear-gradient(135deg, #fff5f5, #fed7d7);
+  background: rgba(229, 62, 62, 0.1);
   border-left: 5px solid #E53E3E;
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(229, 62, 62, 0.15);
@@ -140,8 +184,21 @@
 }
 
 .od-alert-body { flex: 1; }
-.od-alert-title { font-size: 14px; font-weight: 800; color: #742A2A; margin-bottom: 4px; }
-.od-alert-desc { font-size: 13px; color: #9B2C2C; }
+
+.od-alert-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #742A2A;
+  margin-bottom: 4px;
+}
+
+.od-alert-desc {
+  font-size: 13px;
+  color: #9B2C2C;
+}
+
+html.dark-mode .od-alert-title { color: #FEB2B2; }
+html.dark-mode .od-alert-desc { color: #FED7D7; }
 
 .od-alert-link {
   padding: 10px 18px;
@@ -152,30 +209,40 @@
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
+  transition: all 0.3s ease;
 }
 
-.od-alert-link:hover { background: #C53030; transform: translateX(4px); }
+.od-alert-link:hover {
+  background: #C53030;
+  transform: translateX(4px);
+}
 
-/* Stats Grid */
+/* ===================================
+   STATS GRID
+   =================================== */
 .od-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
 }
 
-/* Two Col */
+/* ===================================
+   TWO-COLUMN GRID
+   =================================== */
 .od-two-col {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: 20px;
 }
 
-/* Card */
+/* ===================================
+   CARD
+   =================================== */
 .od-card {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .od-card-header {
@@ -187,68 +254,120 @@
   flex-wrap: wrap;
 }
 
-.od-card-title { font-size: 16px; font-weight: 700; color: #1a202c; }
-.od-link { font-size: 13px; font-weight: 700; color: #FF6B35; text-decoration: none; }
+.od-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.od-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FF6B35;
+  text-decoration: none;
+}
+
 .od-link:hover { text-decoration: underline; }
 
-/* Cases */
-.od-cases-list { display: flex; flex-direction: column; gap: 10px; }
+/* ===================================
+   CASES LIST
+   =================================== */
+.od-cases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .od-case-item {
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: #f7fafc;
+  background: var(--bg-surface-secondary);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.od-case-item:hover { background: #edf2f7; transform: translateX(4px); }
+.od-case-item:hover {
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
 
-.od-case-bar { width: 4px; border-radius: 2px; flex-shrink: 0; }
+.od-case-bar {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 .od-case-body { flex: 1; min-width: 0; }
 
-.od-case-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; flex-wrap: wrap; }
+.od-case-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
 
 .od-case-id {
   font-size: 10px;
   font-weight: 800;
-  background: #1a202c;
+  background: var(--brand-primary);
   color: white;
   padding: 2px 8px;
   border-radius: 4px;
   letter-spacing: 0.5px;
 }
 
-.od-case-priority { font-size: 11px; font-weight: 700; }
+.od-case-priority {
+  font-size: 11px;
+  font-weight: 700;
+}
 
 .od-case-title {
   font-size: 13px;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.od-case-details { display: flex; gap: 12px; font-size: 11px; color: #718096; flex-wrap: wrap; }
-.od-case-deadline { color: #E53E3E; font-weight: 700; }
+.od-case-details {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  flex-wrap: wrap;
+}
 
-/* Activity */
-.od-activity-list { display: flex; flex-direction: column; gap: 12px; }
+.od-case-deadline {
+  color: #E53E3E;
+  font-weight: 700;
+}
+
+/* ===================================
+   ACTIVITY
+   =================================== */
+.od-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 .od-activity-item {
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: #f7fafc;
+  background: var(--bg-surface-secondary);
   border-radius: 10px;
   transition: all 0.3s ease;
 }
 
-.od-activity-item:hover { background: #edf2f7; }
+.od-activity-item:hover {
+  background: var(--bg-hover);
+}
 
 .od-activity-icon {
   width: 38px;
@@ -262,10 +381,23 @@
 }
 
 .od-activity-body { flex: 1; min-width: 0; }
-.od-activity-text { font-size: 13px; color: #2d3748; font-weight: 600; line-height: 1.4; margin-bottom: 2px; }
-.od-activity-time { font-size: 11px; color: #a0aec0; }
 
-/* Actions */
+.od-activity-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+
+.od-activity-time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ===================================
+   QUICK ACTIONS
+   =================================== */
 .od-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -278,7 +410,7 @@
   align-items: center;
   gap: 10px;
   padding: 20px 14px;
-  background: #f7fafc;
+  background: var(--bg-surface-secondary);
   border-radius: 12px;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -286,10 +418,10 @@
 }
 
 .od-action:hover {
-  background: white;
+  background: var(--bg-surface);
   border-color: #4299E1;
   transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .od-action-icon {
@@ -303,18 +435,40 @@
   color: white;
 }
 
-.od-action-label { font-size: 12px; font-weight: 700; color: #2d3748; text-align: center; }
+.od-action-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
 
-/* Responsive */
-@media (max-width: 1024px) { .od-two-col { grid-template-columns: 1fr; } }
+/* ===================================
+   RESPONSIVE
+   =================================== */
+@media (max-width: 1024px) {
+  .od-two-col {
+    grid-template-columns: 1fr;
+  }
+}
 
 @media (max-width: 768px) {
   .od-welcome { padding: 28px 24px; }
   .od-welcome-title { font-size: 22px; }
   .od-welcome-actions { width: 100%; }
-  .od-btn-primary, .od-btn-secondary { flex: 1; justify-content: center; }
-  .od-stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .od-actions-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .od-btn-primary,
+  .od-btn-secondary {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .od-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .od-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 480px) {

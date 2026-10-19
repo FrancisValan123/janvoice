@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import AdminLayout from './AdminLayout'
 import './AuditLog.css'
 
 const AuditLog = () => {
@@ -41,7 +40,7 @@ const AuditLog = () => {
   })
 
   return (
-    <AdminLayout title="Audit Log">
+    <div className="dashboard-content">
       <div className="audit-summary">
         <div className="summary-card">
           <div className="summary-value">{logs.length}</div>
@@ -86,21 +85,13 @@ const AuditLog = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <select
-            className="filter-select"
-            value={filterAction}
-            onChange={(e) => setFilterAction(e.target.value)}
-          >
+          <select className="filter-select" value={filterAction} onChange={(e) => setFilterAction(e.target.value)}>
             <option value="all">All Actions</option>
             {actions.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
-          <select
-            className="filter-select"
-            value={filterSeverity}
-            onChange={(e) => setFilterSeverity(e.target.value)}
-          >
+          <select className="filter-select" value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value)}>
             <option value="all">All Severities</option>
             <option value="info">ℹ️ Info</option>
             <option value="success">✅ Success</option>
@@ -123,9 +114,7 @@ const AuditLog = () => {
                       <strong>{log.user}</strong>
                       <span className="log-role">{log.role}</span>
                     </div>
-                    <div className="log-time">
-                      {new Date(log.time).toLocaleString('en-IN')}
-                    </div>
+                    <div className="log-time">{new Date(log.time).toLocaleString('en-IN')}</div>
                   </div>
                   <div className="log-action-badge">{log.action}</div>
                   <div className="log-description">{log.description}</div>
@@ -143,7 +132,7 @@ const AuditLog = () => {
           )}
         </div>
       </div>
-    </AdminLayout>
+    </div>
   )
 }
 

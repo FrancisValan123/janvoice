@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
 
 const MonitorDeadlines = () => {
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/department/dashboard' },
     { icon: '👥', label: 'Assign Officers', path: '/department/assign' },
-    { icon: '⏰', label: 'Monitor Deadlines', path: '/department/deadlines', badge: 5 },
+    { icon: '⏰', label: 'Monitor Deadlines', path: '/department/deadlines' },
     { icon: '🚨', label: 'Escalate Cases', path: '/department/escalate' },
     { icon: '📈', label: 'Analytics', path: '/department/analytics' },
     { icon: '📄', label: 'SLA Reports', path: '/department/sla' },
@@ -13,99 +14,135 @@ const MonitorDeadlines = () => {
     { icon: '⚙️', label: 'Settings', path: '/department/settings' }
   ]
 
+  const [complaints, setComplaints] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
 
-  const [cases] = useState([
-    { id: 'JV2026089', title: 'Road collapse risk on NH-45', priority: 'emergency', officer: 'Ravi Kumar', due: '2 hours', hoursLeft: 2, status: 'critical' },
-    { id: 'JV2026090', title: 'Water contamination Ward 12', priority: 'emergency', officer: 'Priya Sharma', due: '4 hours', hoursLeft: 4, status: 'critical' },
-    { id: 'JV2026091', title: 'Illegal dumping at lake', priority: 'high', officer: 'Suresh Rajan', due: '12 hours', hoursLeft: 12, status: 'warning' },
-    { id: 'JV2026092', title: 'Streetlight outage main road', priority: 'high', officer: 'Anand Verma', due: '20 hours', hoursLeft: 20, status: 'warning' },
-    { id: 'JV2026093', title: 'Pothole repair MG Road', priority: 'normal', officer: 'Meena Rao', due: '36 hours', hoursLeft: 36, status: 'ok' },
-    { id: 'JV2026094', title: 'Water supply disruption', priority: 'normal', officer: 'Priya Sharma', due: '48 hours', hoursLeft: 48, status: 'ok' },
-    { id: 'JV2026088', title: 'Drainage blockage', priority: 'high', officer: 'Ravi Kumar', due: '-6 hours', hoursLeft: -6, status: 'overdue' }
-  ])
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get('/complaints?limit=100') 
+        const data = res.data?.complaints || []
+        
+        const now = new Date()
 
-  const getStatusConfig = (status) => {
-    const map = {
-      critical: { color: '#E53E3E', bg: '#FED7D7', label: 'Critical', icon: '🚨' },
-      warning: { color: '#ED8936', bg: '#FEEBC8', label: 'Warning', icon: '⚠️' },
-      ok: { color: '#38A169', bg: '#C6F6D5', label: 'On Time', icon: '✅' },
-      overdue: { color: '#C53030', bg: '#FED7D7', label: 'Overdue', icon: '🔴' }
+        const processed = data
+          .filter(c => c.status !== 'resolved' && c.status !== 'rejected')
+          .map(c => {
+            const deadline = c.deadline ? new Date(c.deadline) : null
+            let hoursLeft = null
+            let dueStr = 'No deadline'
+            let deadlineStatus = 'on-time'
+
+            if (deadline) {
+              hoursLeft = (deadline - now) / (1000 * 60 * 60)
+              dueStr = `${Math.round(Math.abs(hoursLeft))} hours`
+              
+              if (hoursLeft < 0) {
+                deadlineStatus = 'overdue'
+                dueStr = `-${Math.round(Math.abs(hoursLeft))} hours`
+              } else if (hoursLeft < 6) {
+                deadlineStatus = 'critical'
+              } else if (hoursLeft < 24) {
+                deadlineStatus = 'warning'
+              }
+            }
+
+            return { ...c, hoursLeft, dueStr, deadlineStatus }
+          })
+          .sort((a, b) => {
+            if (a.hoursLeft === null) return 1
+            if (b.hoursLeft === null) return -1
+            return a.hoursLeft - b.hoursLeft
+          })
+
+        setComplaints(processed)
+      } catch (err) {
+        console.error('Failed to fetch deadlines:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-    return map[status] || map.ok
+
+    fetchComplaints()
+  }, [])
+
+  const filtered = complaints.filter(c => {
+    if (filter === 'all') return true
+    return c.deadlineStatus === filter
+  })
+
+  const stats = {
+    total: complaints.length,
+    overdue: complaints.filter(c => c.deadlineStatus === 'overdue').length,
+    critical: complaints.filter(c => c.deadlineStatus === 'critical').length,
+    warning: complaints.filter(c => c.deadlineStatus === 'warning').length,
+    onTime: complaints.filter(c => c.deadlineStatus === 'on-time').length
   }
 
   const getPriorityConfig = (p) => {
     const map = {
-      emergency: { icon: '🔴', color: '#E53E3E' },
-      high: { icon: '🟠', color: '#F7931E' },
-      normal: { icon: '🟡', color: '#ECC94B' },
-      low: { icon: '🔵', color: '#4299E1' }
+      emergency: { icon: '🔴', label: 'Emergency', color: '#E53E3E' },
+      high: { icon: '🟠', label: 'High', color: '#F7931E' },
+      normal: { icon: '🟡', label: 'Normal', color: '#ECC94B' },
+      low: { icon: '🔵', label: 'Low', color: '#4299E1' }
     }
     return map[p] || map.normal
   }
 
-  const counts = {
-    all: cases.length,
-    critical: cases.filter((c) => c.status === 'critical').length,
-    warning: cases.filter((c) => c.status === 'warning').length,
-    overdue: cases.filter((c) => c.status === 'overdue').length,
-    ok: cases.filter((c) => c.status === 'ok').length
+  const getDeadlineBadge = (status) => {
+    const map = {
+      overdue: { label: 'Overdue', color: '#E53E3E', bg: 'rgba(229, 62, 62, 0.15)', icon: '🔴' },
+      critical: { label: 'Critical', color: '#DD6B20', bg: 'rgba(221, 107, 32, 0.15)', icon: '🚨' },
+      warning: { label: 'Warning', color: '#ED8936', bg: 'rgba(237, 137, 54, 0.15)', icon: '⚠️' },
+      'on-time': { label: 'On Time', color: '#38A169', bg: 'rgba(56, 161, 105, 0.15)', icon: '✅' }
+    }
+    return map[status]
   }
 
-  const filtered = filter === 'all' ? cases : cases.filter((c) => c.status === filter)
+  if (loading) {
+    return (
+      <DashboardLayout role="department_admin" menuItems={menuItems} title="Monitor Deadlines">
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>Loading deadlines...</div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout role="department_admin" menuItems={menuItems} title="Monitor Deadlines">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #742A2A, #C53030)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px', boxShadow: '0 8px 24px rgba(197, 48, 48, 0.2)' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>
-            ⏰ Monitor Deadlines
-          </h2>
-          <p style={{ fontSize: '14px', opacity: 0.95 }}>
-            Track SLA compliance and identify cases at risk of breaching deadlines
-          </p>
+        
+        {/* ✅ ADDED: Beautiful Gradient Banner */}
+        <div style={{ background: 'linear-gradient(135deg, #2C5282 0%, #3182CE 60%, #63B3ED 100%)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', boxShadow: '0 12px 32px rgba(49, 130, 206, 0.25)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+              ⏰ Monitor Deadlines
+            </h2>
+            <p style={{ fontSize: '15px', opacity: 0.95, color: '#FFFFFF', fontWeight: '500', maxWidth: '600px', textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+              Track SLA compliance and ensure no cases pass their deadlines without action.
+            </p>
+          </div>
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
+          <div style={{ position: 'absolute', bottom: '-80px', right: '150px', width: '150px', height: '150px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%' }}></div>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #C53030' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#C53030', lineHeight: 1, marginBottom: '4px' }}>{counts.overdue}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Overdue</div>
-          </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #E53E3E' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#E53E3E', lineHeight: 1, marginBottom: '4px' }}>{counts.critical}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Critical</div>
-          </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #ED8936' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#ED8936', lineHeight: 1, marginBottom: '4px' }}>{counts.warning}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Warning</div>
-          </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #38A169' }}>
-            <div style={{ fontSize: '26px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{counts.ok}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>On Time</div>
-          </div>
-        </div>
-
-        {/* Filter */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        {/* Filter Tabs */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
           {[
-            { id: 'all', label: 'All Cases', count: counts.all },
-            { id: 'overdue', label: '🔴 Overdue', count: counts.overdue },
-            { id: 'critical', label: '🚨 Critical', count: counts.critical },
-            { id: 'warning', label: '⚠️ Warning', count: counts.warning },
-            { id: 'ok', label: '✅ On Time', count: counts.ok }
+            { id: 'all', label: 'All Cases', count: stats.total, color: '#3182CE' },
+            { id: 'overdue', label: 'Overdue', count: stats.overdue, color: '#E53E3E' },
+            { id: 'critical', label: 'Critical', count: stats.critical, color: '#DD6B20' },
+            { id: 'warning', label: 'Warning', count: stats.warning, color: '#ED8936' },
+            { id: 'on-time', label: 'On Time', count: stats.onTime, color: '#38A169' }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
               style={{
-                padding: '10px 18px',
-                background: filter === tab.id ? 'linear-gradient(135deg, #FF6B35, #F7931E)' : 'white',
-                color: filter === tab.id ? 'white' : '#4a5568',
-                border: 'none',
+                padding: '10px 20px',
                 borderRadius: '10px',
+                border: 'none',
                 fontWeight: '700',
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -113,57 +150,75 @@ const MonitorDeadlines = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: filter === tab.id ? '0 4px 12px rgba(255, 107, 53, 0.3)' : '0 2px 8px rgba(0,0,0,0.04)'
+                transition: 'all 0.2s ease',
+                background: filter === tab.id ? tab.color : 'var(--bg-surface)',
+                color: filter === tab.id ? 'white' : 'var(--text-secondary)',
+                boxShadow: filter === tab.id ? `0 4px 12px ${tab.color}40` : 'var(--shadow-sm)'
               }}
             >
               {tab.label}
-              <span style={{ background: filter === tab.id ? 'rgba(255,255,255,0.3)' : '#edf2f7', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>
+              <span style={{ background: filter === tab.id ? 'rgba(255,255,255,0.25)' : 'var(--bg-surface-secondary)', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>
                 {tab.count}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Cases Table */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['ID', 'Case', 'Priority', 'Officer', 'Due In', 'Status', 'Action'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 14px', fontSize: '11px', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c) => {
-                const priority = getPriorityConfig(c.priority)
-                const status = getStatusConfig(c.status)
-                return (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '14px', fontSize: '12px', fontWeight: '800', color: '#1a202c' }}>{c.id}</td>
-                    <td style={{ padding: '14px', fontSize: '13px', color: '#1a202c', fontWeight: '600', minWidth: '200px' }}>{c.title}</td>
-                    <td style={{ padding: '14px', fontSize: '12px', color: priority.color, fontWeight: '700' }}>{priority.icon} {c.priority}</td>
-                    <td style={{ padding: '14px', fontSize: '12px', color: '#4a5568' }}>👤 {c.officer}</td>
-                    <td style={{ padding: '14px', fontSize: '12px', fontWeight: '700', color: c.hoursLeft < 0 ? '#E53E3E' : c.hoursLeft < 24 ? '#ED8936' : '#38A169' }}>
-                      ⏰ {c.due}
-                    </td>
-                    <td style={{ padding: '14px' }}>
-                      <span style={{ padding: '5px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: status.bg, color: status.color, whiteSpace: 'nowrap' }}>
-                        {status.icon} {status.label}
-                      </span>
-                    </td>
-                    <td style={{ padding: '14px' }}>
-                      <button style={{ padding: '6px 12px', background: '#f7fafc', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '11px', fontWeight: '700', color: '#FF6B35', cursor: 'pointer', fontFamily: 'inherit' }}>
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        {/* Table */}
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-sm)', overflowX: 'auto', minHeight: '400px' }}>
+          {filtered.length === 0 ? (
+            /* ✅ ADDED: Nice Empty State */
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
+              <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>No Cases Found</h3>
+              <p style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>There are no cases in this category right now.</p>
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border-light)', textAlign: 'left' }}>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>ID</th>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>Case</th>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>Priority</th>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>Officer</th>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>Due In</th>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>Status</th>
+                  <th style={{ padding: '12px', fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '800', textTransform: 'uppercase' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((c) => {
+                  const priority = getPriorityConfig(c.priority)
+                  const deadlineBadge = getDeadlineBadge(c.deadlineStatus)
+                  return (
+                    <tr key={c._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '16px 12px', fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{c.complaintId || c._id}</td>
+                      <td style={{ padding: '16px 12px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600' }}>{c.title}</td>
+                      <td style={{ padding: '16px 12px' }}>
+                        <span style={{ fontSize: '12px', color: priority.color, fontWeight: '700' }}>
+                          {priority.icon} {priority.label}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px 12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        {c.assignedTo?.name || 'Unassigned'}
+                      </td>
+                      <td style={{ padding: '16px 12px', fontSize: '13px', color: c.deadlineStatus === 'overdue' ? '#E53E3E' : 'var(--text-secondary)', fontWeight: '600' }}>
+                        ⏰ {c.dueStr}
+                      </td>
+                      <td style={{ padding: '16px 12px' }}>
+                        <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: deadlineBadge.bg, color: deadlineBadge.color }}>
+                          {deadlineBadge.icon} {deadlineBadge.label}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px 12px' }}>
+                         <button style={{ padding: '6px 12px', background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-light)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', color: '#FF6B35', fontWeight: '700' }}>View</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </DashboardLayout>

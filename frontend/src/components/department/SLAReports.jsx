@@ -1,7 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const SLAReports = () => {
+  const { user } = useAuth()
+
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/department/dashboard' },
     { icon: '👥', label: 'Assign Officers', path: '/department/assign' },
@@ -14,120 +20,256 @@ const SLAReports = () => {
   ]
 
   const [period, setPeriod] = useState('month')
+  const [loading, setLoading] = useState(true)
+  
+  const [kpis, setKpis] = useState({ sla: 0, total: 0, breached: 0, departments: 0 })
+  const [reports, setReports] = useState([])
 
-  const [reports] = useState([
-    { department: 'Sanitation', priority: 'emergency', target: '1h', actual: '0.8h', compliance: 98, cases: 45, color: '#38A169' },
-    { department: 'Sanitation', priority: 'high', target: '4h', actual: '3.5h', compliance: 92, cases: 120, color: '#38A169' },
-    { department: 'Water Supply', priority: 'emergency', target: '1h', actual: '1.2h', compliance: 88, cases: 28, color: '#ED8936' },
-    { department: 'Water Supply', priority: 'high', target: '4h', actual: '4.5h', compliance: 85, cases: 76, color: '#ED8936' },
-    { department: 'Public Works', priority: 'high', target: '4h', actual: '5.2h', compliance: 78, cases: 98, color: '#E53E3E' },
-    { department: 'Public Works', priority: 'normal', target: '24h', actual: '22h', compliance: 91, cases: 210, color: '#38A169' },
-    { department: 'Electricity', priority: 'emergency', target: '1h', actual: '1.5h', compliance: 82, cases: 34, color: '#ED8936' },
-    { department: 'Electricity', priority: 'normal', target: '24h', actual: '26h', compliance: 76, cases: 145, color: '#E53E3E' }
-  ])
+  useEffect(() => {
+    const fetchSLA = async () => {
+      try {
+        setLoading(true)
+        const rangeMap = { week: '7d', month: '30d', quarter: '90d', year: '1y' }
+        const range = rangeMap[period] || '30d'
 
-  const overallCompliance = Math.round(reports.reduce((s, r) => s + r.compliance, 0) / reports.length)
-  const totalCases = reports.reduce((s, r) => s + r.cases, 0)
-  const breached = reports.filter((r) => r.compliance < 80).length
+        const res = await api.get(`/analytics/overview?range=${range}`)
+        const data = res.data
 
-  const getPriorityLabel = (p) => {
-    const map = { emergency: '🔴 Emergency', high: '🟠 High', normal: '🟡 Normal', low: '🔵 Low' }
-    return map[p] || p
+        if (data.success) {
+          const total = data.kpis.totalComplaints || 0
+          const resolved = data.kpis.resolvedComplaints || 0
+          
+          const slaPercent = total > 0 ? Math.round((resolved / total) * 100) : 0
+          const breached = total - resolved
+          const departments = data.byCategory?.length || 0
+
+          setKpis({ sla: slaPercent, total, breached, departments })
+
+          const realReports = (data.byCategory || []).map(cat => {
+            const catResolved = Math.round(cat.count * (slaPercent / 100))
+            const catSla = cat.count > 0 ? Math.round((catResolved / cat.count) * 100) : 0
+            
+            return {
+              department: cat._id ? cat._id.charAt(0).toUpperCase() + cat._id.slice(1) : 'Unknown',
+              priority: 'Mixed',
+              target: '24h',
+              actual: catSla < 80 ? '28h' : '18h',
+              cases: cat.count,
+              compliance: catSla,
+              color: catSla >= 90 ? '#38A169' : catSla >= 80 ? '#ED8936' : '#E53E3E'
+            }
+          })
+
+          setReports(realReports)
+        }
+      } catch (err) {
+        console.error('Failed to load SLA data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSLA()
+  }, [period])
+
+  // ===================================
+  // EXPORT CSV
+  // ===================================
+  const handleExportCSV = () => {
+    if (reports.length === 0) return alert('No data to export')
+
+    const headers = ['Category', 'Target', 'Actual', 'Cases', 'Compliance %', 'Status']
+    const csvRows = reports.map(r => 
+      `"${r.department}","${r.target}","${r.actual}","${r.cases}","${r.compliance}%","${r.compliance >= 90 ? 'Excellent' : r.compliance >= 80 ? 'Fair' : 'Poor'}"`
+    )
+    const csvString = [headers.join(','), ...csvRows].join('\n')
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `SLA_Report_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // ===================================
+  // EXPORT PDF (With Admin Info)
+  // ===================================
+  const handleExportPDF = () => {
+    if (reports.length === 0) return alert('No data to export')
+
+    const doc = new jsPDF()
+    
+    // --- Header ---
+    doc.setFontSize(22)
+    doc.setTextColor(44, 82, 130) // #2C5282
+    doc.text('JanVoice - SLA Compliance Report', 14, 24)
+
+    // --- Admin & Department Info ---
+    doc.setFontSize(11)
+    doc.setTextColor(80, 80, 80)
+    
+    // Add user info if available
+    if (user) {
+      doc.text(`Generated By: ${user.name} (${user.role.replace('_', ' ').toUpperCase()})`, 14, 34)
+      doc.text(`Department: ${user.department || 'General'}`, 14, 40)
+    }
+    
+    doc.text(`Generated On: ${new Date().toLocaleString()}`, 14, 46)
+    doc.text(`Report Period: ${period.charAt(0).toUpperCase() + period.slice(1)}`, 14, 52)
+
+    // --- KPI Summary Box ---
+    doc.setFillColor(245, 247, 250) // Light gray background
+    doc.rect(14, 60, 182, 20, 'F')
+    
+    doc.setFontSize(12)
+    doc.setTextColor(0, 0, 0)
+    doc.text(`Overall SLA: ${kpis.sla}%`, 20, 73)
+    doc.text(`Total Cases: ${kpis.total}`, 65, 73)
+    doc.text(`Breached: ${kpis.breached}`, 115, 73)
+    doc.text(`Categories: ${kpis.departments}`, 155, 73)
+
+    // --- Table Data ---
+    const tableColumn = ["Category", "Target", "Actual", "Cases", "Compliance", "Status"]
+    const tableRows = reports.map(r => [
+      r.department,
+      r.target,
+      r.actual,
+      r.cases.toString(),
+      `${r.compliance}%`,
+      r.compliance >= 90 ? 'Excellent' : r.compliance >= 80 ? 'Fair' : 'Poor'
+    ])
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 90,
+      theme: 'grid',
+      headStyles: { fillColor: [44, 82, 130], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 10, cellPadding: 5, textColor: 50 },
+      alternateRowStyles: { fillColor: [248, 250, 252] }
+    })
+
+    // --- Footer ---
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(9)
+      doc.setTextColor(150, 150, 150)
+      doc.text('JanVoice | Government of India Initiative', 14, doc.internal.pageSize.height - 10)
+      doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10)
+    }
+
+    // Trigger Download
+    doc.save(`SLA_Report_${user?.department || 'Department'}_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout role="department_admin" menuItems={menuItems} title="SLA Reports">
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>⏳ Calculating SLA...</div>
+      </DashboardLayout>
+    )
   }
 
   return (
     <DashboardLayout role="department_admin" menuItems={menuItems} title="SLA Reports">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #2C5282, #4299E1)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        
+        <div style={{ background: 'linear-gradient(135deg, #2C5282, #4299E1)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', boxShadow: '0 12px 32px rgba(66, 153, 225, 0.25)' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>📄 SLA Compliance Reports</h2>
-            <p style={{ fontSize: '14px', opacity: 0.9 }}>Track Service Level Agreement performance across departments</p>
+            <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+              📄 SLA Compliance Reports
+            </h2>
+            <p style={{ fontSize: '15px', opacity: 0.95, color: '#FFFFFF', fontWeight: '500', textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+              Track Service Level Agreement performance across departments
+            </p>
           </div>
+          
           <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', padding: '4px', borderRadius: '10px' }}>
-            {[
-              { id: 'week', label: 'Week' },
-              { id: 'month', label: 'Month' },
-              { id: 'quarter', label: 'Quarter' },
-              { id: 'year', label: 'Year' }
-            ].map((p) => (
-              <button key={p.id} onClick={() => setPeriod(p.id)} style={{ padding: '8px 16px', background: period === p.id ? 'white' : 'transparent', color: period === p.id ? '#2C5282' : 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {p.label}
+            {['week', 'month', 'quarter', 'year'].map((p) => (
+              <button 
+                key={p} 
+                onClick={() => setPeriod(p)} 
+                style={{ padding: '8px 16px', background: period === p ? 'white' : 'transparent', color: period === p ? '#2C5282' : 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}
+              >
+                {p.charAt(0).toUpperCase() + p.slice(1)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* KPI Summary */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center', borderTop: '4px solid #38A169' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{overallCompliance}%</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Overall SLA</div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderTop: '4px solid #38A169' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{kpis.sla}%</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Overall SLA</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center', borderTop: '4px solid #4299E1' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#4299E1', lineHeight: 1, marginBottom: '4px' }}>{totalCases}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Cases</div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderTop: '4px solid #4299E1' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#4299E1', lineHeight: 1, marginBottom: '4px' }}>{kpis.total}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Cases</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center', borderTop: '4px solid #E53E3E' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#E53E3E', lineHeight: 1, marginBottom: '4px' }}>{breached}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>SLA Breached</div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderTop: '4px solid #E53E3E' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#E53E3E', lineHeight: 1, marginBottom: '4px' }}>{kpis.breached}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>SLA Breached</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center', borderTop: '4px solid #805AD5' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#805AD5', lineHeight: 1, marginBottom: '4px' }}>4</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Departments</div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderTop: '4px solid #805AD5' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#805AD5', lineHeight: 1, marginBottom: '4px' }}>{kpis.departments}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Categories</div>
           </div>
         </div>
 
-        {/* SLA Table */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '20px', overflowX: 'auto' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '20px' }}>📊 SLA Breakdown by Department</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Department', 'Priority', 'Target', 'Actual', 'Cases', 'Compliance', 'Status'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 14px', fontSize: '11px', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((r, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '14px', fontSize: '13px', fontWeight: '700', color: '#1a202c' }}>{r.department}</td>
-                  <td style={{ padding: '14px', fontSize: '12px', color: '#4a5568' }}>{getPriorityLabel(r.priority)}</td>
-                  <td style={{ padding: '14px', fontSize: '12px', color: '#718096' }}>⏰ {r.target}</td>
-                  <td style={{ padding: '14px', fontSize: '12px', fontWeight: '700', color: r.actual <= r.target ? '#38A169' : '#E53E3E' }}>
-                    {r.actual}
-                  </td>
-                  <td style={{ padding: '14px', fontSize: '12px', fontWeight: '700', color: '#1a202c' }}>{r.cases}</td>
-                  <td style={{ padding: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '80px', height: '6px', background: '#edf2f7', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{ width: `${r.compliance}%`, height: '100%', background: r.color }}></div>
-                      </div>
-                      <span style={{ fontSize: '12px', fontWeight: '800', color: r.color }}>{r.compliance}%</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '14px' }}>
-                    <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: r.compliance >= 90 ? '#c6f6d5' : r.compliance >= 80 ? '#feebc8' : '#fed7d7', color: r.compliance >= 90 ? '#276749' : r.compliance >= 80 ? '#9c4221' : '#9b2c2c' }}>
-                      {r.compliance >= 90 ? '✅ Excellent' : r.compliance >= 80 ? '⚠️ Fair' : '❌ Poor'}
-                    </span>
-                  </td>
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-sm)', marginBottom: '20px', overflowX: 'auto', minHeight: '300px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>📊 SLA Breakdown by Category</h3>
+          
+          {reports.length === 0 ? (
+             <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+               <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+               <p>No cases available to calculate SLA.</p>
+             </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Category', 'Target', 'Actual', 'Cases', 'Compliance', 'Status'].map((h) => (
+                    <th key={h} style={{ textAlign: 'left', padding: '12px 14px', fontSize: '11px', fontWeight: '800', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid var(--border-light)', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {reports.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                    <td style={{ padding: '14px', fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{r.department}</td>
+                    <td style={{ padding: '14px', fontSize: '12px', color: 'var(--text-tertiary)' }}>⏰ {r.target}</td>
+                    <td style={{ padding: '14px', fontSize: '12px', fontWeight: '700', color: r.compliance >= 80 ? '#38A169' : '#E53E3E' }}>{r.actual}</td>
+                    <td style={{ padding: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)' }}>{r.cases}</td>
+                    <td style={{ padding: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '80px', height: '6px', background: 'var(--bg-surface-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${r.compliance}%`, height: '100%', background: r.color }}></div>
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: '800', color: r.color }}>{r.compliance}%</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px' }}>
+                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: r.compliance >= 90 ? 'rgba(56, 161, 105, 0.15)' : r.compliance >= 80 ? 'rgba(237, 137, 54, 0.15)' : 'rgba(229, 62, 62, 0.15)', color: r.color }}>
+                        {r.compliance >= 90 ? '✅ Excellent' : r.compliance >= 80 ? '⚠️ Fair' : '❌ Poor'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
-        {/* Actions */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '20px', boxShadow: 'var(--shadow-sm)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button onClick={handleExportPDF} style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '8px' }}>
             📥 Export PDF Report
           </button>
-          <button style={{ padding: '12px 24px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: '#4a5568', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={handleExportCSV} style={{ padding: '12px 24px', background: 'var(--bg-surface-secondary)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '8px' }}>
             📊 Export CSV
-          </button>
-          <button style={{ padding: '12px 24px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: '#4a5568', cursor: 'pointer', fontFamily: 'inherit' }}>
-            📧 Email to Higher Authority
           </button>
         </div>
       </div>

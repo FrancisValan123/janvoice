@@ -1,34 +1,37 @@
 /* ===================================
    JANVOICE — DEPARTMENT ROUTES
-   Base: /api/department
+   Base: /api/departments
    =================================== */
 
 const express = require('express')
 const router = express.Router()
 
 const {
-  getDashboard,
-  getUnassigned,
-  assignOfficer,
-  getOfficers,
-  getOverdueCases,
-  getDepartmentStats,
-  escalateCase
-} = require('../controllers/departmentAdminController')
+  getDepartments,
+  getDepartmentById,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment
+} = require('../controllers/departmentController')
 
 const { protect } = require('../middleware/auth')
 const { authorize } = require('../middleware/roleCheck')
 
-// All routes require Dept Admin
-router.use(protect)
-router.use(authorize('department_admin', 'system_admin'))
+// ===================================
+// PUBLIC-ISH: Any logged-in user can list departments
+// (needed for dropdowns in the create-user form)
+// ===================================
+router.get('/', protect, getDepartments)
 
-router.get('/dashboard', getDashboard)
-router.get('/unassigned', getUnassigned)
-router.put('/assign/:complaintId', assignOfficer)
-router.get('/officers', getOfficers)
-router.get('/overdue', getOverdueCases)
-router.get('/stats', getDepartmentStats)
-router.put('/escalate/:id', escalateCase)
+// ===================================
+// SYSTEM ADMIN ONLY: Manage departments
+// ===================================
+router.get('/:id', protect, getDepartmentById)
+
+router.post('/', protect, authorize('system_admin'), createDepartment)
+
+router.patch('/:id', protect, authorize('system_admin'), updateDepartment)
+
+router.delete('/:id', protect, authorize('system_admin'), deleteDepartment)
 
 module.exports = router

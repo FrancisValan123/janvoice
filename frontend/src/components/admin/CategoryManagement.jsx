@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import AdminLayout from './AdminLayout'
 import './CategoryManagement.css'
 
 const CategoryManagement = () => {
@@ -28,12 +27,7 @@ const CategoryManagement = () => {
     } else {
       setCategories((prev) => [
         ...prev,
-        {
-          _id: String(Date.now()),
-          ...formData,
-          complaints: 0,
-          active: true
-        }
+        { _id: String(Date.now()), ...formData, complaints: 0, active: true }
       ])
     }
     setShowModal(false)
@@ -54,7 +48,7 @@ const CategoryManagement = () => {
   }
 
   return (
-    <AdminLayout title="Category Management">
+    <div className="dashboard-content">
       <div className="cat-summary">
         <div className="summary-card">
           <div className="summary-value">{categories.length}</div>
@@ -174,7 +168,7 @@ const CategoryManagement = () => {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </div>
   )
 }
 

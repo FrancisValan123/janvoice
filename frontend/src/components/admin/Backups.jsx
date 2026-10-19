@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import AdminLayout from './AdminLayout'
 
 const Backups = () => {
   const [backups, setBackups] = useState([
@@ -15,16 +14,8 @@ const Backups = () => {
   const handleCreateBackup = () => {
     setCreating(true)
     setTimeout(() => {
-      const now = new Date()
       setBackups([
-        {
-          _id: String(Date.now()),
-          name: `Manual Backup`,
-          size: '48.5 MB',
-          type: 'manual',
-          status: 'completed',
-          createdAt: now.toISOString()
-        },
+        { _id: String(Date.now()), name: 'Manual Backup', size: '48.5 MB', type: 'manual', status: 'completed', createdAt: new Date().toISOString() },
         ...backups
       ])
       setCreating(false)
@@ -49,30 +40,14 @@ const Backups = () => {
   }
 
   return (
-    <AdminLayout title="Backups">
-      <div
-        style={{
-          background: 'white',
-          borderRadius: '14px',
-          padding: '24px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '20px',
-            flexWrap: 'wrap',
-            gap: '16px'
-          }}
-        >
+    <div className="dashboard-content">
+      <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '4px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '4px', color: 'var(--text-primary)' }}>
               💾 System Backups
             </h3>
-            <p style={{ fontSize: '13px', color: '#718096' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>
               Manage your database backups and restoration points
             </p>
           </div>
@@ -98,102 +73,29 @@ const Backups = () => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {backups.map((backup) => (
-            <div
-              key={backup._id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '16px',
-                background: '#f7fafc',
-                borderRadius: '10px',
-                flexWrap: 'wrap'
-              }}
-            >
-              <div
-                style={{
-                  width: '44px',
-                  height: '44px',
-                  background: backup.type === 'auto' ? '#BEE3F8' : '#FEEBC8',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '20px',
-                  flexShrink: 0
-                }}
-              >
+            <div key={backup._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--bg-surface-secondary)', borderRadius: '10px', flexWrap: 'wrap' }}>
+              <div style={{ width: '44px', height: '44px', background: backup.type === 'auto' ? 'rgba(66, 153, 225, 0.2)' : 'rgba(247, 147, 30, 0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
                 {backup.type === 'auto' ? '🔄' : '👤'}
               </div>
               <div style={{ flex: 1, minWidth: '200px' }}>
-                <div
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#1a202c',
-                    marginBottom: '4px'
-                  }}
-                >
+                <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
                   {backup.name}
                 </div>
-                <div style={{ fontSize: '12px', color: '#718096' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
                   {backup.size} • {new Date(backup.createdAt).toLocaleString('en-IN')}
                 </div>
               </div>
-              <span
-                style={{
-                  padding: '4px 12px',
-                  background: '#c6f6d5',
-                  color: '#276749',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: '700'
-                }}
-              >
+              <span style={{ padding: '4px 12px', background: 'rgba(56, 161, 105, 0.2)', color: '#38A169', borderRadius: '12px', fontSize: '11px', fontWeight: '700' }}>
                 ✅ {backup.status}
               </span>
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  onClick={() => handleDownload(backup.name)}
-                  style={{
-                    padding: '8px 12px',
-                    background: 'white',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
+                <button onClick={() => handleDownload(backup.name)} style={{ padding: '8px 12px', background: 'var(--bg-surface)', border: '2px solid var(--border-light)', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                   📥 Download
                 </button>
-                <button
-                  onClick={() => handleRestore(backup.name)}
-                  style={{
-                    padding: '8px 12px',
-                    background: 'white',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
+                <button onClick={() => handleRestore(backup.name)} style={{ padding: '8px 12px', background: 'var(--bg-surface)', border: '2px solid var(--border-light)', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                   🔄 Restore
                 </button>
-                <button
-                  onClick={() => handleDelete(backup._id)}
-                  style={{
-                    padding: '8px 12px',
-                    background: 'white',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    color: '#E53E3E'
-                  }}
-                >
+                <button onClick={() => handleDelete(backup._id)} style={{ padding: '8px 12px', background: 'var(--bg-surface)', border: '2px solid var(--border-light)', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: '#E53E3E' }}>
                   🗑️
                 </button>
               </div>
@@ -201,7 +103,7 @@ const Backups = () => {
           ))}
         </div>
       </div>
-    </AdminLayout>
+    </div>
   )
 }
 

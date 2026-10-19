@@ -5,7 +5,7 @@ import { api } from '../../services/api'
 import './ComplaintDetails.css'
 
 // ===================================
-// CATEGORY HELPERS (same as MyComplaints)
+// CATEGORY HELPERS
 // ===================================
 const CATEGORY_MAP = {
   roads: { name: 'Roads & Infrastructure', icon: '🛣️' },
@@ -59,8 +59,6 @@ const ComplaintDetails = () => {
         setError(null)
 
         const response = await api.get(`/complaints/${id}`)
-
-        // Backend returns { success: true, complaint: {...} }
         const c = response.data?.complaint || response.data
 
         if (!c) {
@@ -68,7 +66,6 @@ const ComplaintDetails = () => {
           return
         }
 
-        // Format for display
         const formatted = {
           _id: c._id,
           id: c.complaintId || c._id,
@@ -134,6 +131,13 @@ const ComplaintDetails = () => {
     return d.toISOString().split('T')[0]
   }
 
+  const formatSize = (bytes) => {
+    if (!bytes || bytes === 0) return 'N/A'
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+  }
+
   const getStatusConfig = (status) => {
     const map = {
       pending: { label: 'Pending', color: '#ED8936', bg: '#FEEBC8', icon: '⏳' },
@@ -159,12 +163,106 @@ const ComplaintDetails = () => {
   }
 
   // ===================================
+  // EVIDENCE RENDERER (shared by both evidence sections)
+  // ===================================
+  const renderEvidenceItem = (file, i, isAction = false) => {
+    const isImage = file.type === 'image'
+    const isVideo = file.type === 'video'
+
+    return (
+      <a
+        key={file.publicId || i}
+        href={file.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="evidence-item"
+        title="Click to open in a new tab"
+        style={{ textDecoration: 'none' }}
+      >
+        {/* Thumbnail */}
+        {isImage ? (
+          <div
+            className="evidence-thumb"
+            style={{
+              padding: 0,
+              overflow: 'hidden',
+              background: 'var(--bg-surface-tertiary)'
+            }}
+          >
+            <img
+              src={file.url}
+              alt={file.name || `Evidence ${i + 1}`}
+              loading="lazy"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: '6px',
+                display: 'block'
+              }}
+              onError={(e) => {
+                // Fallback to emoji if the image fails to load
+                e.target.style.display = 'none'
+                const parent = e.target.parentNode
+                parent.textContent = '🖼️'
+                parent.style.fontSize = '20px'
+                parent.style.display = 'flex'
+                parent.style.alignItems = 'center'
+                parent.style.justifyContent = 'center'
+              }}
+            />
+          </div>
+        ) : (
+          <div
+            className="evidence-thumb"
+            style={isAction ? { background: 'rgba(56, 161, 105, 0.2)' } : {}}
+          >
+            {isVideo ? '🎥' : isAction ? '📸' : '📄'}
+          </div>
+        )}
+
+        {/* Info */}
+        <div className="evidence-info">
+          <div
+            className="evidence-name"
+            title={file.name || file.url}
+          >
+            {file.name || file.url?.split('/').pop() || `File ${i + 1}`}
+          </div>
+          <div className="evidence-size">
+            {file.size
+              ? formatSize(file.size)
+              : file.type || 'file'}
+          </div>
+          {file.note && (
+            <div className="evidence-note">💬 {file.note}</div>
+          )}
+        </div>
+
+        {/* Open link indicator */}
+        <span
+          style={{
+            fontSize: '11px',
+            color: 'var(--brand-primary)',
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            marginLeft: 'auto',
+            flexShrink: 0
+          }}
+        >
+          Open ↗
+        </span>
+      </a>
+    )
+  }
+
+  // ===================================
   // LOADING STATE
   // ===================================
   if (loading) {
     return (
       <DashboardLayout role="citizen" menuItems={menuItems} title="Complaint Details">
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#666' }}>
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-tertiary)' }}>
           Loading complaint details...
         </div>
       </DashboardLayout>
@@ -178,7 +276,9 @@ const ComplaintDetails = () => {
     return (
       <DashboardLayout role="citizen" menuItems={menuItems} title="Complaint Details">
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <h2 style={{ color: '#E53E3E', marginBottom: '16px' }}>⚠️ {error || 'Complaint not found'}</h2>
+          <h2 style={{ color: '#E53E3E', marginBottom: '16px' }}>
+            ⚠️ {error || 'Complaint not found'}
+          </h2>
           <button className="back-btn" onClick={() => navigate('/citizen/complaints')}>
             ← Back to My Complaints
           </button>
@@ -193,7 +293,6 @@ const ComplaintDetails = () => {
   return (
     <DashboardLayout role="citizen" menuItems={menuItems} title="Complaint Details">
       <div className="details-container">
-        {/* Back Button */}
         <button className="back-btn" onClick={() => navigate('/citizen/complaints')}>
           ← Back to List
         </button>
@@ -244,24 +343,14 @@ const ComplaintDetails = () => {
                 📎 Evidence ({complaint.evidence.length})
               </h3>
               {complaint.evidence.length === 0 ? (
-                <p style={{ color: '#999', fontStyle: 'italic' }}>
+                <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
                   No evidence uploaded by citizen.
                 </p>
               ) : (
                 <div className="evidence-grid">
-                  {complaint.evidence.map((file, i) => (
-                    <div key={i} className="evidence-item">
-                      <div className="evidence-thumb">
-                        {file.type === 'image' ? '🖼️' : file.type === 'video' ? '🎥' : '📄'}
-                      </div>
-                      <div className="evidence-info">
-                        <div className="evidence-name">
-                          {file.url?.split('/').pop() || `File ${i + 1}`}
-                        </div>
-                        <div className="evidence-size">{file.type || 'file'}</div>
-                      </div>
-                    </div>
-                  ))}
+                  {complaint.evidence.map((file, i) =>
+                    renderEvidenceItem(file, i, false)
+                  )}
                 </div>
               )}
             </div>
@@ -271,20 +360,9 @@ const ComplaintDetails = () => {
               <div className="details-card">
                 <h3 className="details-card-title">📸 Officer Action Evidence</h3>
                 <div className="evidence-grid">
-                  {complaint.actionEvidence.map((file, i) => (
-                    <div key={i} className="evidence-item">
-                      <div className="evidence-thumb" style={{ background: '#c6f6d5' }}>
-                        {file.type === 'image' ? '🖼️' : '📄'}
-                      </div>
-                      <div className="evidence-info">
-                        <div className="evidence-name">
-                          {file.url?.split('/').pop() || `File ${i + 1}`}
-                        </div>
-                        <div className="evidence-size">{file.type || 'file'}</div>
-                        {file.note && <div className="evidence-note">💬 {file.note}</div>}
-                      </div>
-                    </div>
-                  ))}
+                  {complaint.actionEvidence.map((file, i) =>
+                    renderEvidenceItem(file, i, true)
+                  )}
                 </div>
               </div>
             )}
@@ -293,7 +371,9 @@ const ComplaintDetails = () => {
             <div className="details-card">
               <h3 className="details-card-title">📅 Status Timeline</h3>
               {complaint.statusHistory.length === 0 ? (
-                <p style={{ color: '#999', fontStyle: 'italic' }}>No timeline entries yet.</p>
+                <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
+                  No timeline entries yet.
+                </p>
               ) : (
                 <div className="details-timeline">
                   {complaint.statusHistory.map((item, i) => {
@@ -339,7 +419,7 @@ const ComplaintDetails = () => {
                   </div>
                 </div>
               ) : (
-                <p style={{ color: '#999', fontStyle: 'italic' }}>
+                <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
                   Not assigned to an officer yet.
                 </p>
               )}

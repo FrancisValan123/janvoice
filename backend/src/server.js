@@ -62,6 +62,9 @@ const { startReportGenerator } = require('./jobs/reportGenerator')
 // ROUTE IMPORTS
 // ===================================
 const apiRoutes = require('./routes')
+const uploadRoutes = require('./routes/uploadRoutes')
+const adminRoutes = require('./routes/adminRoutes')
+const departmentRoutes = require('./routes/departmentRoutes') // ✅ Added
 
 // ===================================
 // LOGGER
@@ -88,11 +91,18 @@ app.use(httpLogger)
 
 // ===================================
 // INPUT SANITIZATION
+// (skip multipart so file uploads aren't mangled)
 // ===================================
-app.use(sanitizeMongo)   // Prevent NoSQL injection
-app.use(sanitizeXSS)     // Prevent XSS attacks
-app.use(preventHPP)      // Prevent HTTP parameter pollution
-app.use(trimStrings)     // Trim whitespace
+app.use((req, res, next) => {
+  if (req.is('multipart/form-data')) return next()
+  return sanitizeMongo(req, res, () => {
+    sanitizeXSS(req, res, () => {
+      preventHPP(req, res, () => {
+        trimStrings(req, res, next)
+      })
+    })
+  })
+})
 
 // ===================================
 // SERVE STATIC UPLOADS (local fallback)
@@ -119,7 +129,8 @@ app.get('/api/health', (req, res) => {
     version: '1.0.0',
     services: {
       database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-      server: 'running'
+      server: 'running',
+      cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? 'configured' : 'not configured'
     }
   })
 })
@@ -137,6 +148,21 @@ app.get('/', (req, res) => {
     health: '/api/health'
   })
 })
+
+// ===================================
+// ADMIN ROUTES (hierarchy-aware user creation)
+// ===================================
+app.use('/api/admin', adminRoutes)
+
+// ===================================
+// DEPARTMENT ROUTES ✅
+// ===================================
+app.use('/api/departments', departmentRoutes)
+
+// ===================================
+// UPLOAD ROUTES
+// ===================================
+app.use('/api/upload', uploadRoutes)
 
 // ===================================
 // API ROUTES
@@ -160,15 +186,17 @@ const initializeServices = async () => {
   try {
     console.log('🔄 Initializing services...')
 
-    // Connect to MongoDB
     await connectDB()
-
-    // Verify email service
     await verifyEmailConnection()
 
-    // Connect to Redis (optional)
     if (process.env.REDIS_URL) {
       await initRedis()
+    }
+
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      console.log('☁️  Cloudinary configured:', process.env.CLOUDINARY_CLOUD_NAME)
+    } else {
+      console.warn('⚠️  Cloudinary not configured — file uploads will fail')
     }
 
     console.log('✅ All services initialized')
@@ -201,12 +229,10 @@ const startJobs = () => {
 
   try {
     console.log('🚀 Starting background jobs...')
-
-    startDeadlineChecker()       // Every 15 min
-    startNotificationSender()    // Every 5 min
-    startDataBackup()            // Daily 2 AM
-    startReportGenerator()       // Weekly Monday 6 AM
-
+    startDeadlineChecker()
+    startNotificationSender()
+    startDataBackup()
+    startReportGenerator()
     console.log('✅ Background jobs running')
   } catch (error) {
     console.error('❌ Failed to start jobs:', error.message)
@@ -220,10 +246,8 @@ const PORT = process.env.PORT || 5000
 
 const startServer = async () => {
   try {
-    // Initialize all services
     await initializeServices()
 
-    // Start listening
     server.listen(PORT, () => {
       console.log('\n' + '='.repeat(60))
       console.log(`🚀 JanVoice API Server`)
@@ -234,13 +258,12 @@ const startServer = async () => {
       console.log(`🎨 Frontend:    ${process.env.CLIENT_URL || 'http://localhost:5173'}`)
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`)
       console.log(`🔌 WebSocket:   Enabled`)
+      console.log(`☁️  Cloudinary:  ${process.env.CLOUDINARY_CLOUD_NAME ? 'configured' : 'not configured'}`)
       console.log('='.repeat(60) + '\n')
 
-      // Start background jobs
       startJobs()
     })
 
-    // Handle server-level errors
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
         console.error(`❌ Port ${PORT} is already in use`)
@@ -261,19 +284,14 @@ const startServer = async () => {
 const gracefulShutdown = async (signal) => {
   console.log(`\n⚠️  ${signal} received. Shutting down gracefully...`)
 
-  // Stop accepting new connections
   server.close(async () => {
     console.log('✅ HTTP server closed')
 
     try {
-      // Disconnect from Redis
       if (process.env.REDIS_URL) {
         await disconnectRedis()
       }
-
-      // Disconnect from MongoDB
       await disconnectDB()
-
       console.log('✅ All connections closed')
       console.log('👋 Goodbye!\n')
       process.exit(0)
@@ -283,7 +301,6 @@ const gracefulShutdown = async (signal) => {
     }
   })
 
-  // Force shutdown after 10 seconds
   setTimeout(() => {
     console.error('⚠️  Forced shutdown after timeout')
     process.exit(1)
@@ -293,32 +310,24 @@ const gracefulShutdown = async (signal) => {
 // ===================================
 // PROCESS EVENT HANDLERS
 // ===================================
-
-// Handle SIGTERM (Docker, Kubernetes)
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
-
-// Handle SIGINT (Ctrl+C)
 process.on('SIGINT', () => gracefulShutdown('SIGINT'))
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('💥 Uncaught Exception:', error)
   logger.logError(error, 'uncaughtException')
   gracefulShutdown('uncaughtException')
 })
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection at:', promise)
   console.error('   Reason:', reason)
-
   logger.logError(
     reason instanceof Error ? reason : new Error(String(reason)),
     'unhandledRejection'
   )
 })
 
-// Handle warning events
 process.on('warning', (warning) => {
   console.warn('⚠️  Warning:', warning.name, '-', warning.message)
 })
@@ -328,7 +337,4 @@ process.on('warning', (warning) => {
 // ===================================
 startServer()
 
-// ===================================
-// EXPORT APP
-// ===================================
 module.exports = app

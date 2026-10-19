@@ -1,15 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
 
 const ComplaintInvestigation = () => {
   const { id } = useParams()
   const navigate = useNavigate()
 
+  // ✅ FIXED: Removed "Investigate" from sidebar
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/officer/dashboard' },
-    { icon: '📋', label: 'Assigned Cases', path: '/officer/assigned', badge: 8 },
-    { icon: '🔍', label: 'Investigate', path: '/officer/investigate' },
+    { icon: '📋', label: 'Assigned Cases', path: '/officer/assigned' },
     { icon: '📤', label: 'Upload Evidence', path: '/officer/evidence' },
     { icon: '📝', label: 'Complaint Notes', path: '/officer/notes' },
     { icon: '🔄', label: 'Reassignment', path: '/officer/reassign' },
@@ -18,47 +19,72 @@ const ComplaintInvestigation = () => {
     { icon: '📄', label: 'Resolution Report', path: '/officer/report' }
   ]
 
-  const [complaint] = useState({
-    id: id || 'JV2026100',
-    title: 'Road collapse risk on NH-45',
-    category: 'Roads & Infrastructure',
-    priority: 'emergency',
-    status: 'investigating',
-    description: 'Large section of road has caved in near km marker 45, causing significant risk to vehicles. There have been 2 minor accidents reported in the last 48 hours. Immediate barricading and repair required.',
-    citizen: { name: 'Francis Valan', phone: '9876543210', email: 'francis@example.com' },
-    location: 'NH-45, near km marker 45, Chennai',
-    affectedPeople: 340,
-    createdAt: '2026-09-30 09:15',
-    deadline: '2026-09-30 12:00',
-    evidence: [
-      { name: 'road_damage_1.jpg', type: 'image', size: '2.4 MB' },
-      { name: 'road_damage_2.jpg', type: 'image', size: '1.8 MB' },
-      { name: 'accident_report.pdf', type: 'document', size: '450 KB' }
-    ],
-    timeline: [
-      { status: 'Submitted', date: '2026-09-30 09:15', icon: '📝', desc: 'Complaint registered', color: '#4299E1' },
-      { status: 'Assigned', date: '2026-09-30 09:30', icon: '👤', desc: 'Assigned to Officer Ravi Kumar', color: '#805AD5' },
-      { status: 'Investigating', date: '2026-09-30 10:00', icon: '🔍', desc: 'Investigation started', color: '#ED8936', current: true }
-    ]
-  })
-
-  const [notes, setNotes] = useState([
-    { id: 1, text: 'Visited the site at 10:30 AM. Road collapse confirmed. Approx 4 sq meters affected.', author: 'Ravi Kumar', time: '2026-09-30 10:45', type: 'observation' },
-    { id: 2, text: 'Contacted Public Works Dept for repair team. Estimated arrival: 2 hours.', author: 'Ravi Kumar', time: '2026-09-30 11:00', type: 'action' },
-    { id: 3, text: 'Set up temporary barricades at location to prevent accidents.', author: 'Ravi Kumar', time: '2026-09-30 11:15', type: 'action' }
-  ])
-
+  const [complaint, setComplaint] = useState(null)
+  const [notes, setNotes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  
   const [newNote, setNewNote] = useState('')
   const [noteType, setNoteType] = useState('observation')
+  const [addingNote, setAddingNote] = useState(false)
+
+  // ===================================
+  // FETCH REAL COMPLAINT
+  // ===================================
+  useEffect(() => {
+    if (!id) {
+      setLoading(false)
+      return
+    }
+
+    const fetchComplaint = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get(`/complaints/${id}`)
+        const c = res.data?.complaint || res.data
+        
+        setComplaint(c)
+        
+        // Map status history as timeline
+        // Map any existing notes if the backend returns them
+        if (c.notes && Array.isArray(c.notes)) {
+          setNotes(c.notes)
+        } else {
+          // If no notes array, we can still show status history if we want
+          setNotes([])
+        }
+      } catch (err) {
+        console.error('Failed to load case:', err)
+        setError('Failed to load case details. It may have been deleted.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchComplaint()
+  }, [id])
 
   const getPriorityConfig = (p) => {
     const map = {
-      emergency: { icon: '🔴', label: 'Emergency', color: '#E53E3E', bg: '#FED7D7' },
-      high: { icon: '🟠', label: 'High', color: '#F7931E', bg: '#FEEBC8' },
-      normal: { icon: '🟡', label: 'Normal', color: '#ECC94B', bg: '#FEFCBF' },
-      low: { icon: '🔵', label: 'Low', color: '#4299E1', bg: '#BEE3F8' }
+      emergency: { icon: '🔴', label: 'Emergency', color: '#E53E3E', bg: 'rgba(229, 62, 62, 0.15)' },
+      high: { icon: '🟠', label: 'High', color: '#F7931E', bg: 'rgba(247, 147, 30, 0.15)' },
+      normal: { icon: '🟡', label: 'Normal', color: '#ECC94B', bg: 'rgba(236, 201, 75, 0.15)' },
+      low: { icon: '🔵', label: 'Low', color: '#4299E1', bg: 'rgba(66, 153, 225, 0.15)' }
     }
     return map[p] || map.normal
+  }
+
+  const getStatusConfig = (s) => {
+    const map = {
+      pending: { icon: '⏳', label: 'Pending', color: '#ED8936', bg: 'rgba(237, 137, 54, 0.15)' },
+      assigned: { icon: '👤', label: 'Assigned', color: '#4299E1', bg: 'rgba(66, 153, 225, 0.15)' },
+      investigating: { icon: '🔍', label: 'Investigating', color: '#805AD5', bg: 'rgba(128, 90, 213, 0.15)' },
+      'in-progress': { icon: '🚧', label: 'In Progress', color: '#3182CE', bg: 'rgba(49, 130, 206, 0.15)' },
+      resolved: { icon: '✅', label: 'Resolved', color: '#38A169', bg: 'rgba(56, 161, 105, 0.15)' },
+      rejected: { icon: '❌', label: 'Rejected', color: '#E53E3E', bg: 'rgba(229, 62, 62, 0.15)' },
+      escalated: { icon: '🚨', label: 'Escalated', color: '#C53030', bg: 'rgba(197, 48, 48, 0.15)' }
+    }
+    return map[s] || map.pending
   }
 
   const getNoteTypeConfig = (type) => {
@@ -66,71 +92,129 @@ const ComplaintInvestigation = () => {
       observation: { label: 'Observation', color: '#4299E1', icon: '👁️' },
       action: { label: 'Action', color: '#38A169', icon: '⚡' },
       issue: { label: 'Issue', color: '#E53E3E', icon: '⚠️' },
-      update: { label: 'Update', color: '#805AD5', icon: '📝' }
+      update: { label: 'Update', color: '#805AD5', icon: '📝' },
+      internal: { label: 'Internal', color: '#718096', icon: '🔒' }
     }
     return map[type] || map.observation
   }
 
-  const handleAddNote = () => {
+  // ===================================
+  // HANDLE ADD NOTE (Real API)
+  // ===================================
+  const handleAddNote = async () => {
     if (!newNote.trim()) return
-    setNotes([
-      ...notes,
-      {
-        id: notes.length + 1,
+
+    setAddingNote(true)
+    try {
+      const res = await api.post(`/complaints/${id}/notes`, {
         text: newNote,
-        author: 'You',
-        time: new Date().toLocaleString('en-IN'),
-        type: noteType
+        type: noteType,
+        isPrivate: false // Optional: add a checkbox for this
+      })
+
+      // Add the newly created note to the top of the list
+      const createdNote = res.data?.note || {
+        _id: Date.now(),
+        text: newNote,
+        type: noteType,
+        author: { name: 'You' }, // Assuming backend returns populated author, fallback to "You"
+        time: new Date().toISOString()
       }
-    ])
-    setNewNote('')
+
+      setNotes([createdNote, ...notes])
+      setNewNote('')
+    } catch (err) {
+      console.error('Failed to add note:', err)
+      alert(err.response?.data?.message || 'Failed to save note.')
+    } finally {
+      setAddingNote(false)
+    }
+  }
+
+  // ===================================
+  // NO ID / LOADING / ERROR STATES
+  // ===================================
+  if (!id) {
+    return (
+      <DashboardLayout role="officer" menuItems={menuItems} title="Investigate Case">
+        <div style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center', padding: '40px 20px', background: 'var(--bg-surface)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔍</div>
+          <h2 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>No Case Selected</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '24px' }}>Please open a case from your Assigned Cases first.</p>
+          <button onClick={() => navigate('/officer/assigned')} style={{ padding: '14px 28px', background: 'linear-gradient(135deg, #3182CE, #2C5282)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>← Go to Assigned Cases</button>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout role="officer" menuItems={menuItems} title="Investigate Case">
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>Loading case details...</div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error || !complaint) {
+    return (
+      <DashboardLayout role="officer" menuItems={menuItems} title="Investigate Case">
+        <div style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center', padding: '40px 20px', background: 'var(--bg-surface)', borderRadius: '16px', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#E53E3E', marginBottom: '12px' }}>Error</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '24px' }}>{error || 'Case not found.'}</p>
+          <button onClick={() => navigate('/officer/assigned')} style={{ padding: '14px 28px', background: 'var(--btn-secondary-bg)', color: 'var(--btn-secondary-text)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>← Back to Assigned Cases</button>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   const priority = getPriorityConfig(complaint.priority)
+  const status = getStatusConfig(complaint.status)
 
   return (
     <DashboardLayout role="officer" menuItems={menuItems} title="Investigate Case">
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          style={{ padding: '10px 16px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: '#4a5568', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '20px' }}
+          style={{ padding: '10px 16px', background: 'var(--btn-secondary-bg)', border: '2px solid var(--btn-secondary-border)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'var(--btn-secondary-text)', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '20px' }}
         >
           ← Back to Cases
         </button>
 
         {/* Header Card */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '20px', borderTop: `4px solid ${priority.color}` }}>
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)', marginBottom: '20px', borderTop: `4px solid ${priority.color}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '16px' }}>
             <div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', background: '#1a202c', color: 'white', padding: '3px 10px', borderRadius: '6px', letterSpacing: '0.5px' }}>{complaint.id}</span>
+                <span style={{ fontSize: '11px', fontWeight: '800', background: 'var(--brand-primary)', color: 'white', padding: '3px 10px', borderRadius: '6px', letterSpacing: '0.5px' }}>{complaint.complaintId || complaint._id}</span>
                 <span style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: priority.bg, color: priority.color }}>
                   {priority.icon} {priority.label}
                 </span>
-                <span style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: '#E9D8FD', color: '#805AD5' }}>
-                  🔍 Investigating
+                <span style={{ padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: status.bg, color: status.color }}>
+                  {status.icon} {status.label}
                 </span>
               </div>
-              <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#1a202c', marginBottom: '8px' }}>{complaint.title}</h1>
-              <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#718096', flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>{complaint.title}</h1>
+              <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: 'var(--text-tertiary)', flexWrap: 'wrap' }}>
                 <span>📁 {complaint.category}</span>
-                <span>📍 {complaint.location}</span>
-                <span>👥 {complaint.affectedPeople} affected</span>
-                <span>📅 {complaint.createdAt}</span>
-                <span style={{ color: '#E53E3E', fontWeight: '700' }}>⏰ Due: {complaint.deadline}</span>
+                <span>📍 {complaint.location?.address || 'Not specified'}</span>
+                <span>👥 {complaint.affectedPeople || 1} affected</span>
+                <span>📅 {new Date(complaint.createdAt).toLocaleDateString()}</span>
+                {complaint.deadline && (
+                  <span style={{ color: '#E53E3E', fontWeight: '700' }}>⏰ Due: {new Date(complaint.deadline).toLocaleDateString()}</span>
+                )}
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => navigate(`/officer/status/${complaint.id}`)}
+                onClick={() => navigate(`/officer/status/${complaint._id}`)}
                 style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #3182CE, #2C5282)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(49, 130, 206, 0.3)' }}
               >
                 📊 Update Status
               </button>
               <button
-                onClick={() => navigate(`/officer/report/${complaint.id}`)}
+                onClick={() => navigate(`/officer/report/${complaint._id}`)}
                 style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #38A169, #2F855A)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)' }}
               >
                 ✅ Mark Resolved
@@ -138,8 +222,8 @@ const ComplaintInvestigation = () => {
             </div>
           </div>
 
-          <div style={{ padding: '16px', background: '#f7fafc', borderRadius: '10px', fontSize: '14px', color: '#4a5568', lineHeight: 1.7 }}>
-            <strong style={{ color: '#2d3748', display: 'block', marginBottom: '6px' }}>📝 Description</strong>
+          <div style={{ padding: '16px', background: 'var(--bg-surface-secondary)', borderRadius: '10px', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '6px' }}>📝 Description</strong>
             {complaint.description}
           </div>
         </div>
@@ -149,20 +233,22 @@ const ComplaintInvestigation = () => {
           {/* Left: Notes / Investigation Log */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Add Note */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '16px' }}>📝 Add Investigation Note</h3>
+            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>📝 Add Investigation Note</h3>
               <textarea
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="Document your findings, actions taken, or observations..."
                 rows="4"
-                style={{ width: '100%', padding: '14px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                disabled={addingNote}
+                style={{ width: '100%', padding: '14px', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
               />
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
                 <select
                   value={noteType}
                   onChange={(e) => setNoteType(e.target.value)}
-                  style={{ padding: '10px 14px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '600', outline: 'none', fontFamily: 'inherit', background: 'white' }}
+                  disabled={addingNote}
+                  style={{ padding: '10px 14px', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', outline: 'none', fontFamily: 'inherit', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
                 >
                   <option value="observation">👁️ Observation</option>
                   <option value="action">⚡ Action Taken</option>
@@ -171,122 +257,181 @@ const ComplaintInvestigation = () => {
                 </select>
                 <button
                   onClick={handleAddNote}
-                  style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto', boxShadow: '0 4px 12px rgba(66, 153, 225, 0.3)' }}
+                  disabled={addingNote || !newNote.trim()}
+                  style={{ padding: '12px 24px', background: (!newNote.trim() || addingNote) ? 'var(--border-medium)' : 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: (!newNote.trim() || addingNote) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginLeft: 'auto', boxShadow: (!newNote.trim() || addingNote) ? 'none' : '0 4px 12px rgba(66, 153, 225, 0.3)' }}
                 >
-                  ➕ Add Note
+                  {addingNote ? '⏳ Saving...' : '➕ Add Note'}
                 </button>
               </div>
             </div>
 
             {/* Notes Timeline */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '20px' }}>📋 Investigation Log ({notes.length})</h3>
+            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>📋 Investigation Log ({notes.length})</h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {notes.map((n) => {
-                  const type = getNoteTypeConfig(n.type)
-                  return (
-                    <div key={n.id} style={{ display: 'flex', gap: '12px', padding: '14px', background: '#f7fafc', borderRadius: '10px', borderLeft: `3px solid ${type.color}` }}>
-                      <div style={{ width: '36px', height: '36px', background: type.color + '20', color: type.color, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
-                        {type.icon}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '800', color: type.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{type.label}</span>
-                          <span style={{ fontSize: '11px', color: '#a0aec0' }}>{n.time}</span>
+              {notes.length === 0 ? (
+                <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>No investigation notes added yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {notes.map((n, idx) => {
+                    const type = getNoteTypeConfig(n.type)
+                    // Handle author being populated object or just a name
+                    const authorName = n.author?.name || n.author || 'Officer'
+                    // Handle time formatting
+                    const timeStr = n.time ? new Date(n.time).toLocaleString('en-IN') : ''
+
+                    return (
+                      <div key={n._id || idx} style={{ display: 'flex', gap: '12px', padding: '14px', background: 'var(--bg-surface-secondary)', borderRadius: '10px', borderLeft: `3px solid ${type.color}` }}>
+                        <div style={{ width: '36px', height: '36px', background: type.color + '20', color: type.color, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+                          {type.icon}
                         </div>
-                        <div style={{ fontSize: '13px', color: '#2d3748', lineHeight: 1.6, marginBottom: '4px' }}>{n.text}</div>
-                        <div style={{ fontSize: '11px', color: '#a0aec0' }}>by {n.author}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '800', color: type.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{type.label}</span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{timeStr}</span>
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: '4px' }}>{n.text}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>by {authorName}</div>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: Sidebar */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Citizen Contact */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1a202c', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>👤 Citizen Contact</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #FF6B35, #F7931E)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '18px', flexShrink: 0 }}>
-                  {complaint.citizen.name.charAt(0)}
+            {complaint.citizen && (
+              <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>👤 Citizen Contact</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                  <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #FF6B35, #F7931E)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '18px', flexShrink: 0 }}>
+                    {complaint.citizen.name?.charAt(0) || 'C'}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>{complaint.citizen.name || 'Citizen'}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Complainant</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#1a202c' }}>{complaint.citizen.name}</div>
-                  <div style={{ fontSize: '12px', color: '#718096' }}>Complainant</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  <div>📞 {complaint.citizen.phone || 'Not provided'}</div>
+                  <div style={{ wordBreak: 'break-all' }}>📧 {complaint.citizen.email || 'Not provided'}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                  {complaint.citizen.phone && (
+                    <a href={`tel:${complaint.citizen.phone}`} style={{ flex: 1, padding: '10px', background: '#38A169', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', textAlign: 'center' }}>
+                      📞 Call
+                    </a>
+                  )}
+                  {complaint.citizen.email && (
+                    <a href={`mailto:${complaint.citizen.email}`} style={{ flex: 1, padding: '10px', background: '#4299E1', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', textAlign: 'center' }}>
+                      📧 Email
+                    </a>
+                  )}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#4a5568' }}>
-                <div>📞 {complaint.citizen.phone}</div>
-                <div style={{ wordBreak: 'break-all' }}>📧 {complaint.citizen.email}</div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                <a href={`tel:${complaint.citizen.phone}`} style={{ flex: 1, padding: '10px', background: '#38A169', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', textAlign: 'center' }}>
-                  📞 Call
-                </a>
-                <a href={`mailto:${complaint.citizen.email}`} style={{ flex: 1, padding: '10px', background: '#4299E1', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textDecoration: 'none', textAlign: 'center' }}>
-                  📧 Email
-                </a>
-              </div>
-            </div>
+            )}
 
             {/* Evidence */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1a202c', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>📎 Evidence ({complaint.evidence.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {complaint.evidence.map((e, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '10px', background: '#f7fafc', borderRadius: '8px' }}>
-                    <div style={{ width: '36px', height: '36px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
-                      {e.type === 'image' ? '🖼️' : '📄'}
+            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
+                📎 Citizen Evidence ({complaint.evidence?.length || 0})
+              </h3>
+              {(!complaint.evidence || complaint.evidence.length === 0) ? (
+                <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '13px' }}>No evidence uploaded by citizen.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {complaint.evidence.map((e, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '10px', background: 'var(--bg-surface-secondary)', borderRadius: '8px' }}>
+                      <div style={{ width: '36px', height: '36px', background: 'var(--bg-surface)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+                        {e.type === 'image' ? '🖼️' : '📄'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {e.url?.split('/').pop() || `File ${i + 1}`}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{e.type || 'file'}</div>
+                      </div>
+                      <a href={e.url} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', fontSize: '11px', fontWeight: '700', color: '#FF6B35', textDecoration: 'none' }}>
+                        View
+                      </a>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#1a202c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
-                      <div style={{ fontSize: '11px', color: '#718096' }}>{e.size}</div>
-                    </div>
-                    <button style={{ padding: '5px 10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11px', fontWeight: '700', color: '#FF6B35', cursor: 'pointer' }}>
-                      View
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* Action Evidence */}
+            {complaint.actionEvidence && complaint.actionEvidence.length > 0 && (
+              <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
+                  📸 Action Evidence ({complaint.actionEvidence.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {complaint.actionEvidence.map((e, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '10px', background: 'var(--bg-surface-secondary)', borderRadius: '8px' }}>
+                      <div style={{ width: '36px', height: '36px', background: 'rgba(56, 161, 105, 0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+                        {e.type === 'image' ? '🖼️' : '📄'}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {e.url?.split('/').pop() || `File ${i + 1}`}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{e.note || e.type || 'file'}</div>
+                      </div>
+                      <a href={e.url} target="_blank" rel="noopener noreferrer" style={{ padding: '5px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border-light)', borderRadius: '6px', fontSize: '11px', fontWeight: '700', color: '#38A169', textDecoration: 'none' }}>
+                        View
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1a202c', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>⚡ Actions</h3>
+            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>⚡ Actions</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={() => navigate(`/officer/evidence/${complaint.id}`)} style={{ padding: '12px', background: '#4299E1', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                <button onClick={() => navigate(`/officer/evidence/${complaint._id}`)} style={{ padding: '12px', background: '#4299E1', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
                   📤 Upload Action Evidence
                 </button>
-                <button onClick={() => navigate(`/officer/reassign/${complaint.id}`)} style={{ padding: '12px', background: '#ED8936', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                <button onClick={() => navigate(`/officer/reassign/${complaint._id}`)} style={{ padding: '12px', background: '#ED8936', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
                   🔄 Request Reassignment
                 </button>
-                <button onClick={() => navigate(`/officer/escalate/${complaint.id}`)} style={{ padding: '12px', background: '#E53E3E', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                <button onClick={() => navigate(`/officer/escalate/${complaint._id}`)} style={{ padding: '12px', background: '#E53E3E', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
                   🚨 Escalate to Authority
                 </button>
               </div>
             </div>
 
-            {/* Timeline */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1a202c', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>📅 Timeline</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {complaint.timeline.map((t, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ width: '36px', height: '36px', background: t.current ? t.color : 'white', color: t.current ? 'white' : t.color, border: `2px solid ${t.color}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
-                      {t.icon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: t.current ? t.color : '#1a202c' }}>{t.status}</div>
-                      <div style={{ fontSize: '11px', color: '#a0aec0', marginBottom: '2px' }}>{t.date}</div>
-                      <div style={{ fontSize: '12px', color: '#4a5568' }}>{t.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* Timeline (Status History) */}
+            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>📅 Status Timeline</h3>
+              {(!complaint.statusHistory || complaint.statusHistory.length === 0) ? (
+                <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '13px' }}>No status updates yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {complaint.statusHistory.map((t, i) => {
+                    const sConf = getStatusConfig(t.status)
+                    const isCurrent = i === complaint.statusHistory.length - 1
+                    return (
+                      <div key={i} style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', background: isCurrent ? sConf.color : 'var(--bg-surface)', color: isCurrent ? 'white' : sConf.color, border: `2px solid ${sConf.color}`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                          {sConf.icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: isCurrent ? sConf.color : 'var(--text-primary)' }}>{sConf.label}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px' }}>{t.updatedAt ? new Date(t.updatedAt).toLocaleString('en-IN') : ''}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{t.note}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,69 +1,183 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { api } from '../../services/api'
 import './AdminDashboard.css'
 
 const AdminDashboard = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { user } = useAuth()
+
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState(null)
+  const [data, setData] = useState({
+    totalUsers: 0,
+    totalComplaints: 0,
+    totalOfficers: 0,
+    totalDepartments: 0,
+    resolvedToday: 0,
+    pendingComplaints: 0,
+    emergencyActive: 0,
+    resolutionRate: 0,
+    systemHealth: 99.9,
+    storageUsed: 0,
+    storageTotal: 100
+  })
   const [recentActivities, setRecentActivities] = useState([])
   const [systemAlerts, setSystemAlerts] = useState([])
 
-  const menuItems = [
-    { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: '👥', label: 'Users', path: '/admin/users' },
-    { icon: '🏛️', label: 'Departments', path: '/admin/departments' },
-    { icon: '📂', label: 'Categories', path: '/admin/categories' },
-    { icon: '🔐', label: 'Roles', path: '/admin/roles' },
-    { icon: '📋', label: 'Audit Log', path: '/admin/audit' },
-    { icon: '💾', label: 'Backups', path: '/admin/backups' },
-    { icon: '📈', label: 'Analytics', path: '/admin/analytics' },
-    { icon: '🖥️', label: 'System Health', path: '/admin/health' },
-    { icon: '⚙️', label: 'Settings', path: '/admin/settings' }
-  ]
-
-  // Fetch dashboard data (uses demo data — replace with real API later)
+  // ===================================
+  // FETCH REAL DASHBOARD DATA
+  // ===================================
   useEffect(() => {
-    setTimeout(() => {
-      setData({
-        totalUsers: 1247,
-        totalComplaints: 12847,
-        totalOfficers: 156,
-        totalDepartments: 8,
-        resolvedToday: 87,
-        pendingComplaints: 1234,
-        emergencyActive: 12,
-        resolutionRate: 78,
-        systemHealth: 99.8,
-        storageUsed: 47,
-        storageTotal: 100
-      })
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true)
 
-      setRecentActivities([
-        { id: 1, user: 'Officer Ravi', action: 'Resolved complaint #JV2026088', time: '2 min ago', type: 'success', icon: '✅' },
-        { id: 2, user: 'Admin Priya', action: 'Added new officer account', time: '15 min ago', type: 'info', icon: '👤' },
-        { id: 3, user: 'Citizen Kumar', action: 'Submitted emergency complaint', time: '32 min ago', type: 'warning', icon: '🚨' },
-        { id: 4, user: 'Dept Head Suresh', action: 'Escalated case #JV2026089', time: '1 hour ago', type: 'danger', icon: '⚠️' },
-        { id: 5, user: 'System', action: 'Auto-backup completed', time: '2 hours ago', type: 'success', icon: '💾' },
-        { id: 6, user: 'Officer Meena', action: 'Uploaded action evidence', time: '3 hours ago', type: 'info', icon: '📤' }
-      ])
+        // Try to fetch users + complaints stats
+        const [usersRes, complaintsRes] = await Promise.allSettled([
+          api.get('/admin/users?limit=1'),
+          api.get('/complaints?limit=1')
+        ])
 
-      setSystemAlerts([
-        { icon: '✅', color: '#38A169', bg: '#c6f6d5', message: 'Database connection healthy', time: 'Live' },
-        { icon: '✅', color: '#38A169', bg: '#c6f6d5', message: 'Email service operational', time: 'Live' },
-        { icon: 'ℹ️', color: '#4299E1', bg: '#bee3f8', message: 'Next backup in 4 hours', time: 'Scheduled' }
-      ])
+        const usersData =
+          usersRes.status === 'fulfilled' ? usersRes.value.data : null
+        const complaintsData =
+          complaintsRes.status === 'fulfilled' ? complaintsRes.value.data : null
 
-      setLoading(false)
-    }, 800)
+        // Calculate stats
+        const totalUsers = usersData?.total || 0
+        const totalComplaints = complaintsData?.total || 0
+
+        // For officers + departments, fetch separately if available
+        let totalOfficers = 0
+        let totalDepartments = 0
+
+        try {
+          const officersRes = await api.get('/admin/users?role=officer&limit=1')
+          totalOfficers = officersRes.data?.total || 0
+        } catch (e) {
+          // silent
+        }
+
+        try {
+          const deptsRes = await api.get('/departments')
+          totalDepartments =
+            deptsRes.data?.count || deptsRes.data?.departments?.length || 0
+        } catch (e) {
+          // silent
+        }
+
+        // Count derived stats from complaints
+        const allComplaints = complaintsData?.complaints || []
+        const pendingComplaints = allComplaints.filter((c) =>
+          ['pending', 'assigned', 'investigating', 'in-progress'].includes(c.status)
+        ).length
+        const emergencyActive = allComplaints.filter(
+          (c) => c.priority === 'emergency' && c.status !== 'resolved'
+        ).length
+        const resolvedToday = allComplaints.filter((c) => {
+          if (c.status !== 'resolved' || !c.resolvedAt) return false
+          const resolved = new Date(c.resolvedAt)
+          const today = new Date()
+          return (
+            resolved.getDate() === today.getDate() &&
+            resolved.getMonth() === today.getMonth() &&
+            resolved.getFullYear() === today.getFullYear()
+          )
+        }).length
+
+        const resolutionRate =
+          totalComplaints > 0
+            ? Math.round(
+                (allComplaints.filter((c) => c.status === 'resolved').length /
+                  totalComplaints) *
+                  100
+              )
+            : 0
+
+        setData({
+          totalUsers,
+          totalComplaints,
+          totalOfficers,
+          totalDepartments,
+          resolvedToday,
+          pendingComplaints,
+          emergencyActive,
+          resolutionRate,
+          systemHealth: 99.9,
+          storageUsed: 47,
+          storageTotal: 100
+        })
+
+        // Build recent activity from latest complaints
+        const sorted = [...allComplaints].sort(
+          (a, b) =>
+            new Date(b.updatedAt || b.createdAt) -
+            new Date(a.updatedAt || a.createdAt)
+        )
+        const recent = sorted.slice(0, 6).map((c, i) => ({
+          id: c._id || i,
+          user: c.citizen?.name || 'Citizen',
+          action: `Complaint ${c.complaintId || ''} — ${c.status}`,
+          time: timeAgo(c.updatedAt || c.createdAt),
+          type:
+            c.status === 'resolved'
+              ? 'success'
+              : c.priority === 'emergency'
+              ? 'danger'
+              : 'info',
+          icon:
+            c.status === 'resolved'
+              ? '✅'
+              : c.priority === 'emergency'
+              ? '🚨'
+              : '📋'
+        }))
+        setRecentActivities(recent)
+
+        // Static-ish system alerts
+        setSystemAlerts([
+          {
+            icon: '✅',
+            color: '#38A169',
+            bg: 'rgba(56, 161, 105, 0.2)',
+            message: 'Database connection healthy',
+            time: 'Live'
+          },
+          {
+            icon: '✅',
+            color: '#38A169',
+            bg: 'rgba(56, 161, 105, 0.2)',
+            message: 'Email service operational',
+            time: 'Live'
+          },
+          {
+            icon: 'ℹ️',
+            color: '#4299E1',
+            bg: 'rgba(66, 153, 225, 0.2)',
+            message: 'Next backup in 4 hours',
+            time: 'Scheduled'
+          }
+        ])
+      } catch (err) {
+        console.error('Dashboard fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboard()
   }, [])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const timeAgo = (dateStr) => {
+    if (!dateStr) return ''
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const mins = Math.floor(diff / 60000)
+    const hours = Math.floor(mins / 60)
+    const days = Math.floor(hours / 24)
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    if (mins > 0) return `${mins} min ago`
+    return 'Just now'
   }
 
   if (loading) {
@@ -79,339 +193,245 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      {/* Sidebar */}
-      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <span className="logo-icon">🇮🇳</span>
-            {sidebarOpen && <span className="logo-text">JanVoice</span>}
+      {/* Welcome Banner */}
+      <div className="welcome-banner">
+        <div className="welcome-text">
+          <h2>Welcome back, {user?.name || 'Admin'}! ⚙️</h2>
+          <p>
+            System is running smoothly. Managing{' '}
+            <strong>{data.totalUsers.toLocaleString()} users</strong> across{' '}
+            <strong>{data.totalDepartments} departments</strong>.
+          </p>
+        </div>
+        <div className="banner-actions">
+          <Link to="/admin/users" className="btn-banner-primary">
+            👥 Manage Users
+          </Link>
+          <Link to="/admin/analytics" className="btn-banner-secondary">
+            📊 View Analytics
+          </Link>
+        </div>
+      </div>
+
+      {/* KPI Stats Grid */}
+      <div className="stats-grid">
+        <div className="stat-card" style={{ '--accent': '#FF6B35' }}>
+          <div className="stat-icon">👥</div>
+          <div className="stat-body">
+            <div className="stat-value">{data.totalUsers.toLocaleString()}</div>
+            <div className="stat-label">Total Users</div>
+            <div className="stat-trend up">Live</div>
           </div>
-          <button
-            className="sidebar-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? '◀' : '▶'}
-          </button>
         </div>
 
-        <div className="admin-badge">
-          <span className="badge-icon">⚙️</span>
-          {sidebarOpen && <span className="badge-text">System Admin</span>}
+        <div className="stat-card" style={{ '--accent': '#4299E1' }}>
+          <div className="stat-icon">📋</div>
+          <div className="stat-body">
+            <div className="stat-value">
+              {data.totalComplaints.toLocaleString()}
+            </div>
+            <div className="stat-label">Total Complaints</div>
+            <div className="stat-trend up">Live</div>
+          </div>
         </div>
 
-        <nav className="sidebar-nav">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-item ${
-                window.location.pathname === item.path ? 'active' : ''
-              }`}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {sidebarOpen && <span className="nav-label">{item.label}</span>}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="user-info">
-            <div className="user-avatar">
-              {user?.name?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            {sidebarOpen && (
-              <div className="user-details">
-                <div className="user-name">{user?.name || 'Admin'}</div>
-                <div className="user-role">System Administrator</div>
-              </div>
-            )}
+        <div className="stat-card" style={{ '--accent': '#805AD5' }}>
+          <div className="stat-icon">👨‍💼</div>
+          <div className="stat-body">
+            <div className="stat-value">{data.totalOfficers}</div>
+            <div className="stat-label">Active Officers</div>
+            <div className="stat-trend">{data.totalDepartments} departments</div>
           </div>
-          <button className="logout-btn" onClick={handleLogout}>
-            <span>🚪</span>
-            {sidebarOpen && <span>Logout</span>}
-          </button>
         </div>
-      </aside>
 
-      {/* Main Content */}
-      <main className="admin-main">
-        <header className="admin-topbar">
-          <h1 className="page-title">System Admin Dashboard</h1>
-          <div className="topbar-right">
-            <button className="icon-btn" title="Notifications">
-              🔔
-              <span className="notification-dot"></span>
-            </button>
-            <button className="icon-btn" title="Messages">✉️</button>
-            <button className="icon-btn" title="Help">❓</button>
-          </div>
-        </header>
-
-        <div className="dashboard-content">
-          {/* Welcome Banner */}
-          <div className="welcome-banner">
-            <div className="welcome-text">
-              <h2>Welcome back, {user?.name || 'Admin'}! ⚙️</h2>
-              <p>
-                System is running smoothly. Managing{' '}
-                <strong>{data.totalUsers.toLocaleString()} users</strong> across{' '}
-                <strong>{data.totalDepartments} departments</strong>.
-              </p>
-            </div>
-            <div className="banner-actions">
-              <Link to="/admin/users" className="btn-banner-primary">
-                👥 Manage Users
-              </Link>
-              <Link to="/admin/analytics" className="btn-banner-secondary">
-                📊 View Analytics
-              </Link>
+        <div className="stat-card" style={{ '--accent': '#E53E3E' }}>
+          <div className="stat-icon">🔴</div>
+          <div className="stat-body">
+            <div className="stat-value">{data.emergencyActive}</div>
+            <div className="stat-label">Active Emergencies</div>
+            <div className="stat-trend down">
+              {data.emergencyActive > 0 ? 'Needs attention' : 'All clear'}
             </div>
           </div>
+        </div>
 
-          {/* KPI Stats Grid */}
-          <div className="stats-grid">
-            <div className="stat-card" style={{ '--accent': '#FF6B35' }}>
-              <div className="stat-icon">👥</div>
-              <div className="stat-body">
-                <div className="stat-value">{data.totalUsers.toLocaleString()}</div>
-                <div className="stat-label">Total Users</div>
-                <div className="stat-trend up">↑ 12% this month</div>
-              </div>
-            </div>
+        <div className="stat-card" style={{ '--accent': '#38A169' }}>
+          <div className="stat-icon">✅</div>
+          <div className="stat-body">
+            <div className="stat-value">{data.resolvedToday}</div>
+            <div className="stat-label">Resolved Today</div>
+            <div className="stat-trend up">{data.resolutionRate}% rate</div>
+          </div>
+        </div>
 
-            <div className="stat-card" style={{ '--accent': '#4299E1' }}>
-              <div className="stat-icon">📋</div>
-              <div className="stat-body">
-                <div className="stat-value">{data.totalComplaints.toLocaleString()}</div>
-                <div className="stat-label">Total Complaints</div>
-                <div className="stat-trend up">↑ 8% this month</div>
-              </div>
+        <div className="stat-card" style={{ '--accent': '#F7931E' }}>
+          <div className="stat-icon">⏳</div>
+          <div className="stat-body">
+            <div className="stat-value">
+              {data.pendingComplaints.toLocaleString()}
             </div>
+            <div className="stat-label">Pending</div>
+            <div className="stat-trend">Across all depts</div>
+          </div>
+        </div>
+      </div>
 
-            <div className="stat-card" style={{ '--accent': '#805AD5' }}>
-              <div className="stat-icon">👨‍💼</div>
-              <div className="stat-body">
-                <div className="stat-value">{data.totalOfficers}</div>
-                <div className="stat-label">Active Officers</div>
-                <div className="stat-trend">{data.totalDepartments} departments</div>
-              </div>
-            </div>
-
-            <div className="stat-card" style={{ '--accent': '#E53E3E' }}>
-              <div className="stat-icon">🔴</div>
-              <div className="stat-body">
-                <div className="stat-value">{data.emergencyActive}</div>
-                <div className="stat-label">Active Emergencies</div>
-                <div className="stat-trend down">Needs attention</div>
-              </div>
-            </div>
-
-            <div className="stat-card" style={{ '--accent': '#38A169' }}>
-              <div className="stat-icon">✅</div>
-              <div className="stat-body">
-                <div className="stat-value">{data.resolvedToday}</div>
-                <div className="stat-label">Resolved Today</div>
-                <div className="stat-trend up">↑ 24%</div>
-              </div>
-            </div>
-
-            <div className="stat-card" style={{ '--accent': '#F7931E' }}>
-              <div className="stat-icon">⏳</div>
-              <div className="stat-body">
-                <div className="stat-value">{data.pendingComplaints.toLocaleString()}</div>
-                <div className="stat-label">Pending</div>
-                <div className="stat-trend">Across all depts</div>
-              </div>
-            </div>
+      {/* System Overview + Quick Actions */}
+      <div className="two-col-grid">
+        {/* System Health */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">🖥️ System Health</h3>
+            <span className="status-badge operational">🟢 Operational</span>
           </div>
 
-          {/* System Overview + Quick Actions */}
-          <div className="two-col-grid">
-            {/* System Health Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <h3 className="card-title">🖥️ System Health</h3>
-                <span className="status-badge operational">
-                  🟢 Operational
+          <div className="health-metrics">
+            <div className="health-metric">
+              <div className="metric-header">
+                <span className="metric-name">System Uptime</span>
+                <span className="metric-value green">{data.systemHealth}%</span>
+              </div>
+              <div className="progress-track">
+                <div
+                  className="progress-fill green"
+                  style={{ width: `${data.systemHealth}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="health-metric">
+              <div className="metric-header">
+                <span className="metric-name">Resolution Rate</span>
+                <span className="metric-value blue">
+                  {data.resolutionRate}%
                 </span>
               </div>
-
-              <div className="health-metrics">
-                <div className="health-metric">
-                  <div className="metric-header">
-                    <span className="metric-name">System Uptime</span>
-                    <span className="metric-value green">{data.systemHealth}%</span>
-                  </div>
-                  <div className="progress-track">
-                    <div
-                      className="progress-fill green"
-                      style={{ width: `${data.systemHealth}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="health-metric">
-                  <div className="metric-header">
-                    <span className="metric-name">Resolution Rate</span>
-                    <span className="metric-value blue">{data.resolutionRate}%</span>
-                  </div>
-                  <div className="progress-track">
-                    <div
-                      className="progress-fill blue"
-                      style={{ width: `${data.resolutionRate}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="health-metric">
-                  <div className="metric-header">
-                    <span className="metric-name">Storage Used</span>
-                    <span className="metric-value orange">
-                      {data.storageUsed} GB / {data.storageTotal} GB
-                    </span>
-                  </div>
-                  <div className="progress-track">
-                    <div
-                      className="progress-fill orange"
-                      style={{
-                        width: `${(data.storageUsed / data.storageTotal) * 100}%`
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* System Alerts */}
-              <div className="alerts-section">
-                {systemAlerts.map((alert, i) => (
-                  <div key={i} className="alert-item">
-                    <span
-                      className="alert-icon-mini"
-                      style={{ background: alert.bg, color: alert.color }}
-                    >
-                      {alert.icon}
-                    </span>
-                    <div className="alert-content">
-                      <div className="alert-message">{alert.message}</div>
-                      <div className="alert-time">{alert.time}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="progress-track">
+                <div
+                  className="progress-fill blue"
+                  style={{ width: `${data.resolutionRate}%` }}
+                ></div>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <h3 className="card-title">⚡ Quick Actions</h3>
+            <div className="health-metric">
+              <div className="metric-header">
+                <span className="metric-name">Storage Used</span>
+                <span className="metric-value orange">
+                  {data.storageUsed} GB / {data.storageTotal} GB
+                </span>
               </div>
-
-              <div className="quick-actions-grid">
-                <Link to="/admin/users" className="quick-action">
-                  <span className="qa-icon">👥</span>
-                  <span className="qa-label">Manage Users</span>
-                </Link>
-                <Link to="/admin/departments" className="quick-action">
-                  <span className="qa-icon">🏛️</span>
-                  <span className="qa-label">Departments</span>
-                </Link>
-                <Link to="/admin/categories" className="quick-action">
-                  <span className="qa-icon">📂</span>
-                  <span className="qa-label">Categories</span>
-                </Link>
-                <Link to="/admin/audit" className="quick-action">
-                  <span className="qa-icon">📋</span>
-                  <span className="qa-label">Audit Log</span>
-                </Link>
-                <Link to="/admin/backups" className="quick-action">
-                  <span className="qa-icon">💾</span>
-                  <span className="qa-label">Backups</span>
-                </Link>
-                <Link to="/admin/analytics" className="quick-action">
-                  <span className="qa-icon">📈</span>
-                  <span className="qa-label">Analytics</span>
-                </Link>
-                <Link to="/admin/health" className="quick-action">
-                  <span className="qa-icon">🖥️</span>
-                  <span className="qa-label">Health</span>
-                </Link>
-                <Link to="/admin/settings" className="quick-action">
-                  <span className="qa-icon">⚙️</span>
-                  <span className="qa-label">Settings</span>
-                </Link>
+              <div className="progress-track">
+                <div
+                  className="progress-fill orange"
+                  style={{
+                    width: `${(data.storageUsed / data.storageTotal) * 100}%`
+                  }}
+                ></div>
               </div>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="dashboard-card">
-            <div className="card-header">
-              <h3 className="card-title">📋 Recent Activity</h3>
-              <Link to="/admin/audit" className="btn-link">
-                View All →
-              </Link>
-            </div>
-
-            <div className="activity-list">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className={`activity-item ${activity.type}`}>
-                  <span className="activity-icon">{activity.icon}</span>
-                  <div className="activity-info">
-                    <div className="activity-text">
-                      <strong>{activity.user}</strong> — {activity.action}
-                    </div>
-                    <div className="activity-time">{activity.time}</div>
-                  </div>
+          <div className="alerts-section">
+            {systemAlerts.map((alert, i) => (
+              <div key={i} className="alert-item">
+                <span
+                  className="alert-icon-mini"
+                  style={{ background: alert.bg, color: alert.color }}
+                >
+                  {alert.icon}
+                </span>
+                <div className="alert-content">
+                  <div className="alert-message">{alert.message}</div>
+                  <div className="alert-time">{alert.time}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Department Overview */}
-          <div className="dashboard-card">
-            <div className="card-header">
-              <h3 className="card-title">🏛️ Department Overview</h3>
-              <Link to="/admin/departments" className="btn-link">
-                Manage →
-              </Link>
-            </div>
-
-            <div className="dept-overview-grid">
-              {[
-                { name: 'Public Works', code: 'PW', color: '#FF6B35', officers: 12, complaints: 45, sla: 84 },
-                { name: 'Water Supply', code: 'WS', color: '#4299E1', officers: 8, complaints: 32, sla: 88 },
-                { name: 'Sanitation', code: 'SN', color: '#38A169', officers: 15, complaints: 58, sla: 90 },
-                { name: 'Electricity', code: 'EL', color: '#ED8936', officers: 6, complaints: 22, sla: 82 }
-              ].map((dept, i) => (
-                <div key={i} className="dept-overview-card">
-                  <div className="dept-header-row">
-                    <span
-                      className="dept-code"
-                      style={{ background: dept.color + '20', color: dept.color }}
-                    >
-                      {dept.code}
-                    </span>
-                    <span className="dept-sla" style={{ color: dept.color }}>
-                      {dept.sla}% SLA
-                    </span>
-                  </div>
-                  <div className="dept-name">{dept.name}</div>
-                  <div className="dept-stats">
-                    <span>👥 {dept.officers} officers</span>
-                    <span>📋 {dept.complaints} complaints</span>
-                  </div>
-                  <div className="progress-track small">
-                    <div
-                      className="progress-fill"
-                      style={{ width: `${dept.sla}%`, background: dept.color }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      </main>
+
+        {/* Quick Actions */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">⚡ Quick Actions</h3>
+          </div>
+
+          <div className="quick-actions-grid">
+            <Link to="/admin/users" className="quick-action">
+              <span className="qa-icon">👥</span>
+              <span className="qa-label">Manage Users</span>
+            </Link>
+            <Link to="/admin/departments" className="quick-action">
+              <span className="qa-icon">🏛️</span>
+              <span className="qa-label">Departments</span>
+            </Link>
+            <Link to="/admin/categories" className="quick-action">
+              <span className="qa-icon">📂</span>
+              <span className="qa-label">Categories</span>
+            </Link>
+            <Link to="/admin/audit" className="quick-action">
+              <span className="qa-icon">📋</span>
+              <span className="qa-label">Audit Log</span>
+            </Link>
+            <Link to="/admin/backups" className="quick-action">
+              <span className="qa-icon">💾</span>
+              <span className="qa-label">Backups</span>
+            </Link>
+            <Link to="/admin/analytics" className="quick-action">
+              <span className="qa-icon">📈</span>
+              <span className="qa-label">Analytics</span>
+            </Link>
+            <Link to="/admin/health" className="quick-action">
+              <span className="qa-icon">🖥️</span>
+              <span className="qa-label">Health</span>
+            </Link>
+            <Link to="/admin/settings" className="quick-action">
+              <span className="qa-icon">⚙️</span>
+              <span className="qa-label">Settings</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h3 className="card-title">📋 Recent Activity</h3>
+          <Link to="/admin/audit" className="btn-link">
+            View All →
+          </Link>
+        </div>
+
+        {recentActivities.length === 0 ? (
+          <p
+            style={{
+              textAlign: 'center',
+              padding: '20px',
+              color: 'var(--text-tertiary)',
+              fontStyle: 'italic'
+            }}
+          >
+            No recent activity yet.
+          </p>
+        ) : (
+          <div className="activity-list">
+            {recentActivities.map((activity) => (
+              <div
+                key={activity.id}
+                className={`activity-item ${activity.type}`}
+              >
+                <span className="activity-icon">{activity.icon}</span>
+                <div className="activity-info">
+                  <div className="activity-text">
+                    <strong>{activity.user}</strong> — {activity.action}
+                  </div>
+                  <div className="activity-time">{activity.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

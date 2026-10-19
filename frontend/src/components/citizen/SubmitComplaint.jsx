@@ -16,7 +16,6 @@ const SubmitComplaint = () => {
     { icon: '👤', label: 'My Profile', path: '/citizen/profile' }
   ]
 
-  // ✅ Category IDs match the enum in the backend Complaint model exactly
   const categories = [
     { id: 'roads', name: 'Roads & Infrastructure', icon: '🛣️' },
     { id: 'water', name: 'Water Supply', icon: '💧' },
@@ -50,11 +49,12 @@ const SubmitComplaint = () => {
       pincode: ''
     },
     affectedPeople: 1,
-    evidence: []
+    evidence: [] // ✅ Now stores { url, publicId, type, name, size }
   })
 
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [complaintId, setComplaintId] = useState('')
   const [serverError, setServerError] = useState('')
@@ -75,9 +75,11 @@ const SubmitComplaint = () => {
   const validateStep1 = () => {
     const newErrors = {}
     if (!formData.title.trim()) newErrors.title = 'Title is required'
-    else if (formData.title.trim().length < 10) newErrors.title = 'Title must be at least 10 characters'
+    else if (formData.title.trim().length < 10)
+      newErrors.title = 'Title must be at least 10 characters'
     if (!formData.category) newErrors.category = 'Please select a category'
-    if (!formData.description.trim()) newErrors.description = 'Description is required'
+    if (!formData.description.trim())
+      newErrors.description = 'Description is required'
     else if (formData.description.trim().length < 20)
       newErrors.description = 'Description must be at least 20 characters'
     setErrors(newErrors)
@@ -86,7 +88,8 @@ const SubmitComplaint = () => {
 
   const validateStep2 = () => {
     const newErrors = {}
-    if (!formData.location.address.trim()) newErrors.address = 'Address is required'
+    if (!formData.location.address.trim())
+      newErrors.address = 'Address is required'
     if (!formData.location.city.trim()) newErrors.city = 'City is required'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -100,24 +103,77 @@ const SubmitComplaint = () => {
 
   const handleBack = () => setStep(step - 1)
 
-  const handleFileUpload = (e) => {
+  // ===================================
+  // ✅ UPLOAD FILES TO CLOUDINARY VIA BACKEND
+  // ===================================
+  const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files)
-    const newFiles = files.map((file) => ({
-      name: file.name,
-      size: (file.size / 1024 / 1024).toFixed(2),
-      type: file.type,
-      file
-    }))
-    setFormData((prev) => ({ ...prev, evidence: [...prev.evidence, ...newFiles] }))
+    if (files.length === 0) return
+
+    // Limit to 5 files total
+    if (formData.evidence.length + files.length > 5) {
+      setServerError('Maximum 5 files allowed')
+      return
+    }
+
+    setUploading(true)
+    setServerError('')
+
+    try {
+      const uploadData = new FormData()
+      files.forEach((file) => {
+        uploadData.append('files', file)
+      })
+
+      const response = await api.post('/upload/evidence', uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      if (response.data.success) {
+        setFormData((prev) => ({
+          ...prev,
+          evidence: [...prev.evidence, ...response.data.files]
+        }))
+      } else {
+        setServerError(response.data.message || 'Upload failed')
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
+      setServerError(
+        err.response?.data?.message || 'File upload failed. Please try again.'
+      )
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
-  const removeFile = (index) => {
+  // ===================================
+  // ✅ REMOVE FILE (also deletes from Cloudinary)
+  // ===================================
+  const removeFile = async (index) => {
+    const file = formData.evidence[index]
+    if (!file) return
+
     setFormData((prev) => ({
       ...prev,
       evidence: prev.evidence.filter((_, i) => i !== index)
     }))
+
+    if (file.publicId) {
+      try {
+        await api.delete(
+          `/upload/evidence/${encodeURIComponent(file.publicId)}`
+        )
+      } catch (err) {
+        console.error('Failed to delete file from Cloudinary:', err)
+      }
+    }
   }
 
+  // ===================================
+  // ✅ SUBMIT COMPLAINT WITH EVIDENCE URLS
+  // ===================================
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -127,7 +183,6 @@ const SubmitComplaint = () => {
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        // ✅ CRITICAL FIX: Send lowercase ID ('roads', 'water') that matches backend enum
         category: formData.category,
         priority: formData.priority,
         location: {
@@ -136,9 +191,15 @@ const SubmitComplaint = () => {
           state: formData.location.state.trim(),
           pincode: formData.location.pincode.trim()
         },
-        // ✅ Convert affectedPeople to a number, defaulting to 1 if empty
         affectedPeople: parseInt(formData.affectedPeople, 10) || 1,
-        evidence: []
+        // ✅ Send real evidence URLs
+        evidence: formData.evidence.map((f) => ({
+          url: f.url,
+          publicId: f.publicId,
+          type: f.type,
+          name: f.name,
+          size: f.size
+        }))
       }
 
       const response = await api.post('/complaints', payload)
@@ -234,7 +295,7 @@ const SubmitComplaint = () => {
           {serverError && (
             <div
               style={{
-                background: '#FED7D7',
+                background: 'rgba(229, 62, 62, 0.1)',
                 color: '#C53030',
                 padding: '12px 16px',
                 borderRadius: '8px',
@@ -329,7 +390,6 @@ const SubmitComplaint = () => {
                 </div>
               </div>
 
-              {/* ✅ FIXED: Affected People input now allows deleting the default value */}
               <div className="form-group">
                 <label>Number of Affected People</label>
                 <input
@@ -338,14 +398,12 @@ const SubmitComplaint = () => {
                   value={formData.affectedPeople}
                   onChange={(e) => {
                     const value = e.target.value
-                    // Allow empty string while typing so user can delete the "1"
                     updateField(
                       'affectedPeople',
                       value === '' ? '' : parseInt(value, 10)
                     )
                   }}
                   onBlur={(e) => {
-                    // If left empty on blur, default back to 1
                     if (e.target.value === '') {
                       updateField('affectedPeople', 1)
                     }
@@ -420,21 +478,44 @@ const SubmitComplaint = () => {
               <h2 className="step-title">📸 Upload Evidence (Optional)</h2>
               <p className="step-desc">
                 Attach photos, videos, or documents that help explain the issue.
+                Max 5 files, 10MB each.
               </p>
 
-              <label className="upload-dropzone">
+              <label
+                className="upload-dropzone"
+                style={{
+                  opacity: uploading ? 0.6 : 1,
+                  pointerEvents: uploading ? 'none' : 'auto'
+                }}
+              >
                 <input
                   type="file"
                   multiple
                   accept="image/*,video/*,.pdf,.doc,.docx"
                   onChange={handleFileUpload}
                   hidden
+                  disabled={uploading || formData.evidence.length >= 5}
                 />
-                <span className="upload-icon">📤</span>
-                <div className="upload-title">Click to upload files</div>
-                <div className="upload-hint">
-                  Images, videos, PDFs (max 10 MB each)
-                </div>
+                {uploading ? (
+                  <>
+                    <span className="upload-icon">⏳</span>
+                    <div className="upload-title">Uploading...</div>
+                    <div className="upload-hint">Please wait</div>
+                  </>
+                ) : (
+                  <>
+                    <span className="upload-icon">📤</span>
+                    <div className="upload-title">
+                      {formData.evidence.length >= 5
+                        ? 'Maximum 5 files reached'
+                        : 'Click to upload files'}
+                    </div>
+                    <div className="upload-hint">
+                      Images, videos, PDFs (max 10 MB each) •{' '}
+                      {formData.evidence.length}/5 uploaded
+                    </div>
+                  </>
+                )}
               </label>
 
               {formData.evidence.length > 0 && (
@@ -443,22 +524,31 @@ const SubmitComplaint = () => {
                     Uploaded ({formData.evidence.length})
                   </div>
                   {formData.evidence.map((file, i) => (
-                    <div key={i} className="file-item">
+                    <div key={file.publicId || i} className="file-item">
                       <span className="file-icon">
-                        {file.type.startsWith('image')
+                        {file.type === 'image'
                           ? '🖼️'
-                          : file.type.startsWith('video')
+                          : file.type === 'video'
                           ? '🎥'
                           : '📄'}
                       </span>
                       <div className="file-info">
-                        <div className="file-name">{file.name}</div>
-                        <div className="file-size">{file.size} MB</div>
+                        <div className="file-name">
+                          {file.name ||
+                            file.url?.split('/').pop() ||
+                            `File ${i + 1}`}
+                        </div>
+                        <div className="file-size">
+                          {file.size
+                            ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
+                            : 'Uploaded'}
+                        </div>
                       </div>
                       <button
                         type="button"
                         className="file-remove"
                         onClick={() => removeFile(i)}
+                        title="Remove file"
                       >
                         ✖
                       </button>
@@ -535,12 +625,22 @@ const SubmitComplaint = () => {
           {/* Navigation Buttons */}
           <div className="form-navigation">
             {step > 1 && (
-              <button type="button" className="btn-nav-back" onClick={handleBack}>
+              <button
+                type="button"
+                className="btn-nav-back"
+                onClick={handleBack}
+                disabled={uploading}
+              >
                 ← Back
               </button>
             )}
             {step < 4 && (
-              <button type="button" className="btn-nav-next" onClick={handleNext}>
+              <button
+                type="button"
+                className="btn-nav-next"
+                onClick={handleNext}
+                disabled={uploading}
+              >
                 Next →
               </button>
             )}
@@ -548,7 +648,7 @@ const SubmitComplaint = () => {
               <button
                 type="submit"
                 className="btn-nav-submit"
-                disabled={submitting}
+                disabled={submitting || uploading}
               >
                 {submitting ? (
                   <>

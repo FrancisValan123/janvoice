@@ -121,6 +121,22 @@ const complaintSchema = new mongoose.Schema(
         updatedAt: { type: Date, default: Date.now }
       }
     ],
+
+    // ✅ NEW: Notes added by officers or admins
+    notes: [
+      {
+        text: { type: String, required: true, trim: true, maxlength: 1000 },
+        type: {
+          type: String,
+          enum: ['observation', 'action', 'issue', 'update', 'internal'],
+          default: 'observation'
+        },
+        isPrivate: { type: Boolean, default: false },
+        author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        time: { type: Date, default: Date.now }
+      }
+    ],
+
     deadline: { type: Date, default: null },
     resolvedAt: { type: Date, default: null },
     feedback: {

@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-/**
- * AdminLayout - Specialized layout for System Admin pages
- * Features: Extended sidebar with admin-specific items, admin badge
- */
 const AdminLayout = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -65,10 +61,15 @@ const AdminLayout = () => {
   }
 
   const getPageTitle = () => {
-    const current = menuItems.find((item) =>
+    // Exact match first
+    const exact = menuItems.find((item) => item.path === location.pathname)
+    if (exact) return exact.label
+
+    // Fallback: startsWith
+    const startsWith = menuItems.find((item) =>
       location.pathname.startsWith(item.path)
     )
-    return current ? current.label : 'Admin'
+    return startsWith ? startsWith.label : 'Admin'
   }
 
   return (
@@ -76,11 +77,10 @@ const AdminLayout = () => {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: '#f5f7fa',
+        background: 'var(--bg-app)',
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
       }}
     >
-      {/* Mobile Overlay */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
@@ -115,7 +115,6 @@ const AdminLayout = () => {
               : 'translateX(0)'
         }}
       >
-        {/* Logo */}
         <div
           style={{
             padding: '20px',
@@ -173,7 +172,6 @@ const AdminLayout = () => {
           )}
         </div>
 
-        {/* Admin Badge */}
         {sidebarOpen && (
           <div
             style={{
@@ -195,7 +193,6 @@ const AdminLayout = () => {
           </div>
         )}
 
-        {/* Nav */}
         <nav
           style={{
             flex: 1,
@@ -256,7 +253,6 @@ const AdminLayout = () => {
           })}
         </nav>
 
-        {/* User + Logout */}
         <div
           style={{
             padding: '14px',
@@ -357,20 +353,19 @@ const AdminLayout = () => {
           overflowX: 'hidden'
         }}
       >
-        {/* Top Bar */}
         <header
           style={{
-            background: 'white',
+            background: 'var(--bg-surface)',
             padding: '16px 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '20px',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            boxShadow: 'var(--shadow-sm)',
             position: 'sticky',
             top: 0,
             zIndex: 40,
-            borderBottom: '1px solid #e2e8f0'
+            borderBottom: '1px solid var(--border-light)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -380,12 +375,12 @@ const AdminLayout = () => {
                 display: window.innerWidth < 768 ? 'flex' : 'none',
                 width: '40px',
                 height: '40px',
-                background: '#f7fafc',
+                background: 'var(--bg-surface-secondary)',
                 border: 'none',
                 borderRadius: '10px',
                 cursor: 'pointer',
                 fontSize: '18px',
-                color: '#4a5568',
+                color: 'var(--text-secondary)',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
@@ -399,12 +394,12 @@ const AdminLayout = () => {
                 display: window.innerWidth >= 768 ? 'flex' : 'none',
                 width: '36px',
                 height: '36px',
-                background: '#f7fafc',
+                background: 'var(--bg-surface-secondary)',
                 border: 'none',
                 borderRadius: '10px',
                 cursor: 'pointer',
                 fontSize: '12px',
-                color: '#4a5568',
+                color: 'var(--text-secondary)',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
@@ -416,7 +411,7 @@ const AdminLayout = () => {
               style={{
                 fontSize: '20px',
                 fontWeight: '800',
-                color: '#1a202c',
+                color: 'var(--text-primary)',
                 margin: 0
               }}
             >
@@ -430,11 +425,12 @@ const AdminLayout = () => {
                 width: '42px',
                 height: '42px',
                 borderRadius: '10px',
-                background: '#f7fafc',
+                background: 'var(--bg-surface-secondary)',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: '16px',
-                position: 'relative'
+                position: 'relative',
+                color: 'var(--text-secondary)'
               }}
             >
               🔔
@@ -447,20 +443,20 @@ const AdminLayout = () => {
                   height: '8px',
                   background: '#FF6B35',
                   borderRadius: '50%',
-                  border: '2px solid white'
+                  border: '2px solid var(--bg-surface)'
                 }}
               ></span>
             </button>
-
             <button
               style={{
                 width: '42px',
                 height: '42px',
                 borderRadius: '10px',
-                background: '#f7fafc',
+                background: 'var(--bg-surface-secondary)',
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: '16px'
+                fontSize: '16px',
+                color: 'var(--text-secondary)'
               }}
             >
               ❓
@@ -468,7 +464,6 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <div
           style={{
             flex: 1,
@@ -479,27 +474,33 @@ const AdminLayout = () => {
           <Outlet />
         </div>
 
-        {/* Footer */}
         <footer
           style={{
             padding: '16px 28px',
-            background: 'white',
-            borderTop: '1px solid #e2e8f0',
+            background: 'var(--bg-surface)',
+            borderTop: '1px solid var(--border-light)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '16px',
             fontSize: '12px',
-            color: '#718096',
+            color: 'var(--text-tertiary)',
             flexWrap: 'wrap'
           }}
         >
           <div style={{ fontWeight: '600' }}>
             © {new Date().getFullYear()} JanVoice | Government of India Initiative
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '600' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontWeight: '600'
+            }}
+          >
             <span>🇮🇳 Made in India</span>
-            <span style={{ color: '#cbd5e0' }}>•</span>
+            <span style={{ color: 'var(--border-medium)' }}>•</span>
             <span>Admin v1.0.0</span>
           </div>
         </footer>

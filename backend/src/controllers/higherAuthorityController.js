@@ -39,7 +39,7 @@ exports.getDashboard = async (req, res) => {
     res.status(HTTP_STATUS.OK).json({
       success: true,
       stats: {
-        total,
+        totalComplaints: total,
         escalated,
         overdue,
         resolved,
@@ -181,6 +181,7 @@ exports.getDepartmentComparison = async (req, res) => {
       },
       {
         $project: {
+          // ✅ Crucial: The frontend expects `name`, not `_id`
           name: '$_id',
           total: 1,
           resolved: 1,

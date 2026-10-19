@@ -1,7 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const ActionTakenReport = () => {
+  const { user } = useAuth()
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/authority/dashboard' },
     { icon: '🚨', label: 'Escalated Cases', path: '/authority/escalated' },
@@ -14,33 +19,44 @@ const ActionTakenReport = () => {
   ]
 
   const [period, setPeriod] = useState('month')
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const reports = [
-    { id: 'JV2026089', title: 'Road collapse risk on NH-45', dept: 'Public Works', officer: 'Ravi Kumar', action: 'Approved emergency budget', actionBy: 'Authority', date: '2026-09-28', status: 'resolved', impact: 'High' },
-    { id: 'JV2026090', title: 'Water contamination Ward 12', dept: 'Water Supply', officer: 'Priya Sharma', action: 'Issued directive to dept head', actionBy: 'Authority', date: '2026-09-27', status: 'in-progress', impact: 'Critical' },
-    { id: 'JV2026091', title: 'Illegal dumping at lake', dept: 'Sanitation', officer: 'Suresh Rajan', action: 'Transferred case to new officer', actionBy: 'Authority', date: '2026-09-26', status: 'in-progress', impact: 'High' },
-    { id: 'JV2026092', title: 'Streetlight outage main road', dept: 'Electricity', officer: 'Anand Verma', action: 'Escalated to state level', actionBy: 'Authority', date: '2026-09-25', status: 'escalated', impact: 'Medium' },
-    { id: 'JV2026093', title: 'Sewage overflow near school', dept: 'Sanitation', officer: 'Meena Rao', action: 'Immediate cleanup ordered', actionBy: 'Authority', date: '2026-09-24', status: 'resolved', impact: 'Critical' },
-    { id: 'JV2026094', title: 'Broken footpath near bus stop', dept: 'Public Works', officer: 'Divya Menon', action: 'Approved repair budget', actionBy: 'Authority', date: '2026-09-23', status: 'in-progress', impact: 'Medium' },
-    { id: 'JV2026095', title: 'Broken bridge railing', dept: 'Public Works', officer: 'Divya Menon', action: 'Closed case — out of scope', actionBy: 'Authority', date: '2026-09-22', status: 'closed', impact: 'High' }
-  ]
+  // ===================================
+  // FETCH REAL DATA
+  // ===================================
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get('/authority/reports')
+        setReports(res.data?.reports || [])
+      } catch (err) {
+        console.error('Failed to load reports:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchReports()
+  }, [period])
 
   const getStatusConfig = (status) => {
     const map = {
-      resolved: { label: 'Resolved', color: '#38A169', bg: '#C6F6D5', icon: '✅' },
-      'in-progress': { label: 'In Progress', color: '#3182CE', bg: '#BEE3F8', icon: '🚧' },
-      escalated: { label: 'Escalated', color: '#C53030', bg: '#FED7D7', icon: '🚨' },
-      closed: { label: 'Closed', color: '#718096', bg: '#EDF2F7', icon: '🔒' }
+      resolved: { label: 'Resolved', color: '#38A169', bg: 'rgba(56, 161, 105, 0.15)', icon: '✅' },
+      'in-progress': { label: 'In Progress', color: '#3182CE', bg: 'rgba(49, 130, 206, 0.15)', icon: '🚧' },
+      escalated: { label: 'Escalated', color: '#C53030', bg: 'rgba(197, 48, 48, 0.15)', icon: '🚨' },
+      closed: { label: 'Closed', color: '#718096', bg: 'rgba(113, 128, 150, 0.15)', icon: '🔒' }
     }
     return map[status] || map['in-progress']
   }
 
   const getImpactConfig = (impact) => {
     const map = {
-      Critical: { color: '#C53030', bg: '#FED7D7' },
-      High: { color: '#9C4221', bg: '#FEEBC8' },
-      Medium: { color: '#975A16', bg: '#FEFCBF' },
-      Low: { color: '#2C5282', bg: '#BEE3F8' }
+      Critical: { color: '#C53030', bg: 'rgba(197, 48, 48, 0.15)' },
+      High: { color: '#9C4221', bg: 'rgba(156, 66, 33, 0.15)' },
+      Medium: { color: '#975A16', bg: 'rgba(151, 90, 22, 0.15)' },
+      Low: { color: '#2C5282', bg: 'rgba(44, 82, 130, 0.15)' }
     }
     return map[impact] || map.Medium
   }
@@ -50,38 +66,126 @@ const ActionTakenReport = () => {
     resolved: reports.filter((r) => r.status === 'resolved').length,
     inProgress: reports.filter((r) => r.status === 'in-progress').length,
     escalated: reports.filter((r) => r.status === 'escalated').length,
-    critical: reports.filter((r) => r.impact === 'Critical').length
+    critical: reports.filter((r) => r.priority === 'emergency').length
+  }
+
+  // ===================================
+  // EXPORT PDF
+  // ===================================
+  const handleExportPDF = () => {
+    if (reports.length === 0) return alert('No data to export')
+
+    const doc = new jsPDF()
+    
+    doc.setFontSize(20)
+    doc.setTextColor(44, 82, 130)
+    doc.text('JanVoice - Action Taken Report', 14, 22)
+
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30)
+    doc.text(`Period: ${period.toUpperCase()}`, 14, 35)
+
+    doc.setFontSize(12)
+    doc.setTextColor(0)
+    doc.text(`Total Actions: ${stats.total}  |  Resolved: ${stats.resolved}  |  In Progress: ${stats.inProgress}`, 14, 45)
+
+    const tableColumn = ["Case ID", "Title", "Department", "Action Taken", "Priority", "Date", "Status"]
+    const tableRows = reports.map(r => [
+      r.complaintId || r._id,
+      r.title || 'Untitled',
+      r.department || 'N/A',
+      r.action || 'No action recorded',
+      (r.priority || 'normal').toUpperCase(),
+      r.date ? new Date(r.date).toLocaleDateString() : 'N/A',
+      (r.status || 'pending').toUpperCase()
+    ])
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 55,
+      theme: 'grid',
+      headStyles: { fillColor: [44, 82, 130], textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 3, textColor: 50 },
+      alternateRowStyles: { fillColor: [245, 247, 250] }
+    })
+
+    doc.save(`Action_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
+  // ===================================
+  // EXPORT CSV
+  // ===================================
+  const handleExportCSV = () => {
+    if (reports.length === 0) return alert('No data to export')
+    
+    const headers = ['Case ID', 'Title', 'Department', 'Action Taken', 'Priority', 'Date', 'Status']
+    const csvRows = reports.map(r => 
+      `"${r.complaintId || r._id}","${r.title}","${r.department}","${r.action}","${r.priority}","${r.date}","${r.status}"`
+    )
+    const csvString = [headers.join(','), ...csvRows].join('\n')
+
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Action_Report_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // ===================================
+  // EMAIL REPORT
+  // ===================================
+  const handleEmailReport = () => {
+    if (reports.length === 0) return alert('No data to email')
+
+    const subject = encodeURIComponent(`JanVoice Action Report - ${period.toUpperCase()}`)
+    
+    // Create a text version of the table for the email body
+    let body = `Action Taken Report\nGenerated by: ${user?.name || 'Higher Authority'}\nDate: ${new Date().toLocaleString()}\n\n`
+    body += `Summary:\nTotal Actions: ${stats.total}\nResolved: ${stats.resolved}\nIn Progress: ${stats.inProgress}\n\n`
+    body += `Recent Log:\n`
+    
+    reports.slice(0, 10).forEach(r => {
+      body += `- [${r.complaintId || r._id}] ${r.title} (${r.status})\n`
+    })
+
+    if (reports.length > 10) {
+      body += `\n...and ${reports.length - 10} more actions.`
+    }
+
+    const mailtoLink = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`
+    window.location.href = mailtoLink
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout role="higher_authority" menuItems={menuItems} title="Action Taken Report">
+        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-tertiary)' }}>⏳ Loading reports...</div>
+      </DashboardLayout>
+    )
   }
 
   return (
     <DashboardLayout role="higher_authority" menuItems={menuItems} title="Action Taken Report">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #2C5282, #4299E1)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        
+        {/* Header Banner */}
+        <div style={{ background: 'linear-gradient(135deg, #2C5282, #4299E1)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', boxShadow: '0 12px 32px rgba(66, 153, 225, 0.25)' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>📄 Action Taken Report</h2>
-            <p style={{ fontSize: '14px', opacity: 0.9 }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+              📄 Action Taken Report
+            </h2>
+            <p style={{ fontSize: '15px', opacity: 0.95, color: '#FFFFFF', fontWeight: '500', textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
               Complete log of all actions taken on escalated cases
             </p>
           </div>
           <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', padding: '4px', borderRadius: '10px' }}>
             {['week', 'month', 'quarter', 'year'].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                style={{
-                  padding: '8px 16px',
-                  background: period === p ? 'white' : 'transparent',
-                  color: period === p ? '#2C5282' : 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '700',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  textTransform: 'capitalize'
-                }}
-              >
+              <button key={p} onClick={() => setPeriod(p)} style={{ padding: '8px 16px', background: period === p ? 'white' : 'transparent', color: period === p ? '#2C5282' : 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize' }}>
                 {p}
               </button>
             ))}
@@ -97,70 +201,79 @@ const ActionTakenReport = () => {
             { label: 'Escalated Further', value: stats.escalated, color: '#C53030' },
             { label: 'Critical Impact', value: stats.critical, color: '#9C4221' }
           ].map((s, i) => (
-            <div key={i} style={{ background: 'white', borderRadius: '12px', padding: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: `4px solid ${s.color}` }}>
-              <div style={{ fontSize: '26px', fontWeight: '800', color: s.color, lineHeight: 1, marginBottom: '4px' }}>{s.value}</div>
-              <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>{s.label}</div>
+            <div key={i} style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', borderLeft: `4px solid ${s.color}` }}>
+              <div style={{ fontSize: '28px', fontWeight: '800', color: s.color, lineHeight: 1, marginBottom: '4px' }}>{s.value}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <button style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(66, 153, 225, 0.3)' }}>
+          <button onClick={handleExportPDF} style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(66, 153, 225, 0.3)' }}>
             📥 Export PDF
           </button>
-          <button style={{ padding: '12px 24px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: '#4a5568', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={handleExportCSV} style={{ padding: '12px 24px', background: 'var(--bg-surface)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}>
             📊 Export CSV
           </button>
-          <button style={{ padding: '12px 24px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: '#4a5568', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={handleEmailReport} style={{ padding: '12px 24px', background: 'var(--bg-surface)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}>
             📧 Email Report
           </button>
         </div>
 
         {/* Table */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflowX: 'auto' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '20px' }}>
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-sm)', overflowX: 'auto', minHeight: '300px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
             📋 Action Log ({reports.length} actions)
           </h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Case ID', 'Title', 'Department', 'Action Taken', 'Impact', 'Date', 'Status'].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 14px', fontSize: '11px', fontWeight: '800', color: '#718096', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((r) => {
-                const status = getStatusConfig(r.status)
-                const impact = getImpactConfig(r.impact)
-                return (
-                  <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '14px', fontSize: '12px', fontWeight: '800', color: '#1a202c' }}>{r.id}</td>
-                    <td style={{ padding: '14px', fontSize: '13px', color: '#1a202c', fontWeight: '600', minWidth: '200px' }}>{r.title}</td>
-                    <td style={{ padding: '14px', fontSize: '12px', color: '#718096' }}>{r.dept}</td>
-                    <td style={{ padding: '14px', fontSize: '12px', color: '#2d3748', maxWidth: '240px' }}>
-                      <div style={{ fontWeight: '700', marginBottom: '2px' }}>{r.action}</div>
-                      <div style={{ fontSize: '11px', color: '#a0aec0' }}>by {r.actionBy}</div>
-                    </td>
-                    <td style={{ padding: '14px' }}>
-                      <span style={{ padding: '4px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '700', background: impact.bg, color: impact.color }}>
-                        {r.impact}
-                      </span>
-                    </td>
-                    <td style={{ padding: '14px', fontSize: '12px', color: '#718096' }}>{r.date}</td>
-                    <td style={{ padding: '14px' }}>
-                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: status.bg, color: status.color, whiteSpace: 'nowrap' }}>
-                        {status.icon} {status.label}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          
+          {reports.length === 0 ? (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <p>No action reports available yet.</p>
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Case ID', 'Title', 'Department', 'Action Taken', 'Impact', 'Date', 'Status'].map((h) => (
+                    <th key={h} style={{ textAlign: 'left', padding: '12px 14px', fontSize: '11px', fontWeight: '800', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid var(--border-light)', whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((r, i) => {
+                  const status = getStatusConfig(r.status)
+                  const impact = getImpactConfig(r.priority === 'emergency' ? 'Critical' : 'High')
+                  return (
+                    <tr key={r._id || i} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '14px', fontSize: '12px', fontWeight: '800', color: 'var(--text-primary)' }}>{r.complaintId || r._id}</td>
+                      <td style={{ padding: '14px', fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600', minWidth: '200px' }}>{r.title}</td>
+                      <td style={{ padding: '14px', fontSize: '12px', color: 'var(--text-tertiary)' }}>{r.department}</td>
+                      <td style={{ padding: '14px', fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '240px' }}>
+                        <div style={{ fontWeight: '700', marginBottom: '2px' }}>{r.action || 'No action recorded'}</div>
+                      </td>
+                      <td style={{ padding: '14px' }}>
+                        <span style={{ padding: '4px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '700', background: impact.bg, color: impact.color }}>
+                          {r.priority === 'emergency' ? 'Critical' : 'High'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                        {r.date ? new Date(r.date).toLocaleDateString() : '—'}
+                      </td>
+                      <td style={{ padding: '14px' }}>
+                        <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', background: status.bg, color: status.color, whiteSpace: 'nowrap' }}>
+                          {status.icon} {status.label}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </DashboardLayout>

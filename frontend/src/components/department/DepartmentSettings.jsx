@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { useAuth } from '../../context/AuthContext'
+import { api } from '../../services/api'
 
 const DepartmentSettings = () => {
+  const { user } = useAuth()
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/department/dashboard' },
     { icon: '👥', label: 'Assign Officers', path: '/department/assign' },
@@ -13,13 +16,19 @@ const DepartmentSettings = () => {
     { icon: '⚙️', label: 'Settings', path: '/department/settings' }
   ]
 
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [deptId, setDeptId] = useState(null)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
   const [settings, setSettings] = useState({
-    departmentName: 'Public Works Department',
-    departmentCode: 'PW',
-    headName: 'Eng. Suresh Kumar',
-    contactEmail: 'pw@janvoice.gov.in',
-    contactPhone: '1800-111-2222',
-    autoAssign: true,
+    departmentName: '',
+    departmentCode: '',
+    headName: '',
+    contactEmail: '',
+    contactPhone: '',
+    autoAssign: false,
     emailNotifications: true,
     smsNotifications: false,
     allowReassignment: true,
@@ -29,15 +38,92 @@ const DepartmentSettings = () => {
     lowResponse: 48
   })
 
-  const [saved, setSaved] = useState(false)
+  // ===================================
+  // FETCH REAL DEPARTMENT DATA
+  // ===================================
+  useEffect(() => {
+    const fetchDepartment = async () => {
+      try {
+        setLoading(true)
+        // 1. Fetch all departments
+        const res = await api.get('/departments')
+        const departments = res.data?.departments || []
+        
+        // 2. Find the logged-in admin's department
+        const myDept = departments.find(d => d.name === user?.department)
+        
+        if (myDept) {
+          setDeptId(myDept._id)
+          setSettings(prev => ({
+            ...prev,
+            departmentName: myDept.name || '',
+            departmentCode: myDept.code || '',
+            headName: myDept.head || '',
+            contactEmail: myDept.contactEmail || '',
+            contactPhone: myDept.contactPhone || '',
+            emergencyResponse: myDept.slaTargets?.emergency || 1,
+            highResponse: myDept.slaTargets?.high || 4,
+            normalResponse: myDept.slaTargets?.normal || 24,
+            lowResponse: myDept.slaTargets?.low || 48
+          }))
+        } else {
+          setError('Could not find your department record in the database.')
+        }
+      } catch (err) {
+        console.error('Failed to load department settings:', err)
+        setError('Failed to load settings from the server.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user?.department) {
+      fetchDepartment()
+    } else {
+      setLoading(false)
+      setError('You are not assigned to a department.')
+    }
+  }, [user])
 
   const handleChange = (field, value) => {
     setSettings((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  // ===================================
+  // SAVE TO DATABASE
+  // ===================================
+  const handleSave = async () => {
+    if (!deptId) return alert('Department ID not found.')
+    
+    setSaving(true)
+    setError('')
+    
+    try {
+      // Prepare payload matching your backend's expected fields
+      const payload = {
+        name: settings.departmentName,
+        code: settings.departmentCode,
+        head: settings.headName,
+        contactEmail: settings.contactEmail,
+        contactPhone: settings.contactPhone,
+        slaTargets: {
+          emergency: parseInt(settings.emergencyResponse),
+          high: parseInt(settings.highResponse),
+          normal: parseInt(settings.normalResponse),
+          low: parseInt(settings.lowResponse)
+        }
+      }
+
+      await api.patch(`/departments/${deptId}`, payload)
+      
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error('Failed to save settings:', err)
+      setError(err.response?.data?.message || 'Failed to save settings. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const Toggle = ({ checked, onChange }) => (
@@ -48,7 +134,7 @@ const DepartmentSettings = () => {
         width: '50px',
         height: '28px',
         borderRadius: '14px',
-        background: checked ? 'linear-gradient(135deg, #FF6B35, #F7931E)' : '#cbd5e0',
+        background: checked ? 'linear-gradient(135deg, #FF6B35, #F7931E)' : 'var(--border-medium)',
         border: 'none',
         cursor: 'pointer',
         position: 'relative',
@@ -73,10 +159,10 @@ const DepartmentSettings = () => {
   )
 
   const Card = ({ title, subtitle, children }) => (
-    <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
-      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #e2e8f0' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '4px' }}>{title}</h3>
-        {subtitle && <p style={{ fontSize: '13px', color: '#718096' }}>{subtitle}</p>}
+    <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+      <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-light)' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>{title}</h3>
+        {subtitle && <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>{subtitle}</p>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {children}
@@ -86,17 +172,17 @@ const DepartmentSettings = () => {
 
   const FormGroup = ({ label, children, hint }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <label style={{ fontSize: '13px', fontWeight: '700', color: '#2d3748' }}>{label}</label>
+      <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>{label}</label>
       {children}
-      {hint && <span style={{ fontSize: '11px', color: '#a0aec0', fontStyle: 'italic' }}>{hint}</span>}
+      {hint && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>{hint}</span>}
     </div>
   )
 
   const ToggleRow = ({ label, desc, checked, onChange }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '14px 0', borderBottom: '1px solid #f1f5f9' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '14px 0', borderBottom: '1px solid var(--border-light)' }}>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: '14px', fontWeight: '700', color: '#1a202c', marginBottom: '2px' }}>{label}</div>
-        <div style={{ fontSize: '12px', color: '#718096' }}>{desc}</div>
+        <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '2px' }}>{label}</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{desc}</div>
       </div>
       <Toggle checked={checked} onChange={onChange} />
     </div>
@@ -104,28 +190,48 @@ const DepartmentSettings = () => {
 
   const inputStyle = {
     padding: '12px 14px',
-    border: '2px solid #e2e8f0',
+    border: '2px solid var(--border-light)',
     borderRadius: '10px',
     fontSize: '14px',
-    color: '#1a202c',
+    color: 'var(--text-primary)',
+    background: 'var(--input-bg)',
     outline: 'none',
     fontFamily: 'inherit',
     transition: 'all 0.3s ease'
   }
 
+  if (loading) {
+    return (
+      <DashboardLayout role="department_admin" menuItems={menuItems} title="Department Settings">
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>⏳ Loading settings...</div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout role="department_admin" menuItems={menuItems} title="Department Settings">
       <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
         {saved && (
           <div style={{ position: 'fixed', top: '24px', right: '24px', background: '#38A169', color: 'white', padding: '14px 24px', borderRadius: '10px', fontWeight: '700', boxShadow: '0 8px 24px rgba(56, 161, 105, 0.3)', zIndex: 1000 }}>
             ✅ Settings saved successfully!
           </div>
         )}
 
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '14px', padding: '28px', color: 'white' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>⚙️ Department Settings</h2>
-          <p style={{ fontSize: '14px', opacity: 0.9 }}>Configure department information and preferences</p>
+        {error && (
+          <div style={{ background: 'rgba(229, 62, 62, 0.1)', color: '#C53030', padding: '14px', borderRadius: '10px', fontWeight: 600, fontSize: '13px' }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* Header Banner - Fixed text color */}
+        <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '20px', padding: '32px', color: 'white', boxShadow: '0 12px 32px rgba(45, 55, 72, 0.25)' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+            ⚙️ Department Settings
+          </h2>
+          <p style={{ fontSize: '15px', opacity: 0.95, color: '#FFFFFF', fontWeight: '500', textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+            Configure department information and preferences
+          </p>
         </div>
 
         {/* General Info */}
@@ -201,11 +307,18 @@ const DepartmentSettings = () => {
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
-          <button style={{ padding: '14px 24px', background: 'white', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', fontWeight: '700', color: '#4a5568', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ padding: '14px 24px', background: 'var(--bg-surface)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '14px', fontWeight: '700', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
             Reset to Defaults
           </button>
-          <button onClick={handleSave} style={{ padding: '14px 32px', background: 'linear-gradient(135deg, #FF6B35, #F7931E)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)' }}>
-            💾 Save All Settings
+          <button 
+            onClick={handleSave} 
+            disabled={saving}
+            style={{ padding: '14px 32px', background: saving ? 'var(--border-medium)' : 'linear-gradient(135deg, #FF6B35, #F7931E)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxShadow: saving ? 'none' : '0 4px 12px rgba(255, 107, 53, 0.3)' }}
+          >
+            {saving ? '⏳ Saving...' : '💾 Save All Settings'}
           </button>
         </div>
       </div>

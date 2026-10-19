@@ -80,6 +80,7 @@ import OfficerPerformance from './components/department/OfficerPerformance'
 import ResourceAllocation from './components/department/ResourceAllocation'
 import SLAReports from './components/department/SLAReports'
 import DepartmentSettings from './components/department/DepartmentSettings'
+import DepartmentProfile from './components/department/DepartmentProfile'
 
 // ===================================
 // HIGHER AUTHORITY PAGES
@@ -92,6 +93,8 @@ import DepartmentComparison from './components/higher-auth/DepartmentComparison'
 import ActionTakenReport from './components/higher-auth/ActionTakenReport'
 import MonthlyStatistics from './components/higher-auth/MonthlyStatistics'
 import RecommendationSystem from './components/higher-auth/RecommendationSystem'
+import AuthorityProfile from './components/higher-auth/AuthorityProfile' // ✅ ADDED
+import AuthoritySettings from './components/higher-auth/AuthoritySettings' // ✅ ADDED
 
 // ===================================
 // ADMIN PAGES
@@ -103,7 +106,6 @@ import CategoryManagement from './components/admin/CategoryManagement'
 import RoleManagement from './components/admin/RoleManagement'
 import AuditLog from './components/admin/AuditLog'
 import Backups from './components/admin/Backups'
-// 👇 FIXED: Removed curly braces to match default export 👇
 import AnalyticsOverview from './components/admin/AnalyticsOverview'
 import SystemHealth from './components/admin/SystemHealth'
 import SystemSettings from './components/admin/SystemSettings'
@@ -258,6 +260,14 @@ function App() {
             }
           />
           <Route
+            path="/officer/investigate"
+            element={
+              <ProtectedRoute allowedRoles={['officer']}>
+                <Navigate to="/officer/assigned" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/officer/case/:id"
             element={
               <ProtectedRoute allowedRoles={['officer']}>
@@ -382,6 +392,14 @@ function App() {
             }
           />
           <Route
+            path="/department/profile"
+            element={
+              <ProtectedRoute allowedRoles={['department_admin']}>
+                <DepartmentProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/department/assign"
             element={
               <ProtectedRoute allowedRoles={['department_admin']}>
@@ -462,6 +480,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['higher_authority']}>
                 <AuthorityDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/authority/profile"
+            element={
+              <ProtectedRoute allowedRoles={['higher_authority']}>
+                <AuthorityProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/authority/settings"
+            element={
+              <ProtectedRoute allowedRoles={['higher_authority']}>
+                <AuthoritySettings />
               </ProtectedRoute>
             }
           />

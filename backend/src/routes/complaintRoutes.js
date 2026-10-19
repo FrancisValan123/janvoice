@@ -16,7 +16,9 @@ const {
   uploadActionEvidence,
   requestReassignment,
   getOfficerStats,
-  deleteComplaint
+  deleteComplaint,
+  addNote,
+  assignComplaint // ✅ ADDED
 } = require('../controllers/complaintController')
 
 const { protect } = require('../middleware/auth')
@@ -39,7 +41,7 @@ router.use(protect)
 /**
  * @route   GET /api/complaints/my
  * @desc    Get all complaints submitted by the logged-in citizen
- * @access  Private (Citizen only, but any authenticated user is allowed)
+ * @access  Private
  */
 router.get('/my', getMyComplaints)
 
@@ -94,13 +96,23 @@ router.get(
 
 // ===================================
 // PARAMETERIZED ROUTES LAST
-// (These use :id, so they must come after specific routes)
 // ===================================
+
+/**
+ * @route   PUT /api/complaints/:id/assign
+ * @desc    Assign a complaint to an officer
+ * @access  Private (Dept Admin, System Admin)
+ */
+router.put(
+  '/:id/assign',
+  authorize('department_admin', 'system_admin'),
+  assignComplaint // ✅ ADDED
+)
 
 /**
  * @route   GET /api/complaints/:id
  * @desc    Get details of a single complaint by ID
- * @access  Private (Any authenticated user, access controlled in controller)
+ * @access  Private
  */
 router.get('/:id', getComplaintById)
 
@@ -139,9 +151,20 @@ router.post(
 )
 
 /**
+ * @route   POST /api/complaints/:id/notes
+ * @desc    Add a note to a complaint
+ * @access  Private (Officer, Dept Admin, System Admin)
+ */
+router.post(
+  '/:id/notes',
+  authorize('officer', 'department_admin', 'system_admin'),
+  addNote
+)
+
+/**
  * @route   DELETE /api/complaints/:id
- * @desc    Delete a complaint (usually for admin/spam removal)
- * @access  Private (Any authenticated user, access controlled in controller)
+ * @desc    Delete a complaint
+ * @access  Private
  */
 router.delete('/:id', deleteComplaint)
 

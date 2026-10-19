@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import AdminLayout from './AdminLayout'
 import './DepartmentManagement.css'
 
 const DepartmentManagement = () => {
@@ -21,7 +20,7 @@ const DepartmentManagement = () => {
   }
 
   return (
-    <AdminLayout title="Department Management">
+    <div className="dashboard-content">
       <div className="dept-summary">
         <div className="summary-card">
           <div className="summary-value">{departments.length}</div>
@@ -154,7 +153,7 @@ const DepartmentManagement = () => {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </div>
   )
 }
 

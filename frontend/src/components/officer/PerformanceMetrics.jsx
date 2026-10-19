@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
 
 const PerformanceMetrics = () => {
+  // ✅ FIXED: Removed "Investigate" from sidebar
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/officer/dashboard' },
-    { icon: '📋', label: 'Assigned Cases', path: '/officer/assigned', badge: 8 },
-    { icon: '🔍', label: 'Investigate', path: '/officer/investigate' },
+    { icon: '📋', label: 'Assigned Cases', path: '/officer/assigned' },
     { icon: '📤', label: 'Upload Evidence', path: '/officer/evidence' },
     { icon: '📝', label: 'Complaint Notes', path: '/officer/notes' },
     { icon: '🔄', label: 'Reassignment', path: '/officer/reassign' },
@@ -14,43 +15,129 @@ const PerformanceMetrics = () => {
     { icon: '📄', label: 'Resolution Report', path: '/officer/report' }
   ]
 
-  const [period, setPeriod] = useState('month')
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    total: 0,
+    resolved: 0,
+    pending: 0,
+    resolutionRate: 0,
+    avgResolutionDays: 0,
+    avgRating: 0,
+    active: 0
+  })
+  const [monthlyData, setMonthlyData] = useState([])
+  const [categoryPerformance, setCategoryPerformance] = useState([])
 
-  const stats = {
-    totalResolved: 168,
-    avgResolution: 3.8,
-    sla: 92,
-    rating: 4.7,
-    totalAssigned: 180,
-    resolved: 168,
-    pending: 8,
-    escalated: 4,
-    resolutionRate: 93
+  // ===================================
+  // FETCH REAL PERFORMANCE DATA
+  // ===================================
+  useEffect(() => {
+    const fetchPerformance = async () => {
+      try {
+        setLoading(true)
+
+        // 1. Fetch official stats
+        const statsRes = await api.get('/complaints/officer-stats')
+        const officialStats = statsRes.data?.stats || {}
+
+        // 2. Fetch assigned complaints for detailed analysis
+        const complaintsRes = await api.get('/complaints/assigned')
+        const rawData = complaintsRes.data?.complaints || complaintsRes.data?.data || []
+
+        // --- Calculate real metrics ---
+        const resolvedData = rawData.filter(c => c.status === 'resolved')
+        const activeData = rawData.filter(c => ['pending', 'assigned', 'investigating', 'in-progress'].includes(c.status))
+
+        // Calculate avg resolution days
+        let totalDays = 0
+        let validResolvedCount = 0
+        resolvedData.forEach(c => {
+          if (c.createdAt && c.resolvedAt) {
+            const days = (new Date(c.resolvedAt) - new Date(c.createdAt)) / (1000 * 60 * 60 * 24)
+            totalDays += days
+            validResolvedCount++
+          }
+        })
+        const avgResolutionDays = validResolvedCount > 0 ? (totalDays / validResolvedCount).toFixed(1) : 0
+
+        // Calculate avg rating
+        const ratedComplaints = resolvedData.filter(c => c.feedback?.rating)
+        const avgRating = ratedComplaints.length > 0 
+          ? (ratedComplaints.reduce((sum, c) => sum + c.feedback.rating, 0) / ratedComplaints.length).toFixed(1)
+          : 0
+
+        setStats({
+          total: officialStats.total || rawData.length,
+          resolved: officialStats.resolved || resolvedData.length,
+          pending: officialStats.pending || activeData.length,
+          resolutionRate: officialStats.resolutionRate || (rawData.length > 0 ? Math.round((resolvedData.length / rawData.length) * 100) : 0),
+          active: activeData.length,
+          avgResolutionDays,
+          avgRating
+        })
+
+        // --- Group by Month (for chart) ---
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const currentYear = new Date().getFullYear()
+        const monthlyCounts = {}
+
+        resolvedData.forEach(c => {
+          if (c.resolvedAt) {
+            const d = new Date(c.resolvedAt)
+            if (d.getFullYear() === currentYear) {
+              const monthName = months[d.getMonth()]
+              monthlyCounts[monthName] = (monthlyCounts[monthName] || 0) + 1
+            }
+          }
+        })
+
+        // Convert to array for rendering (last 6 months)
+        const monthlyArray = Object.keys(monthlyCounts).map(month => ({
+          month,
+          resolved: monthlyCounts[month]
+        })).slice(-6) // Just show last 6 months with data
+        setMonthlyData(monthlyArray.length > 0 ? monthlyArray : [{ month: 'No Data', resolved: 0 }])
+
+        // --- Group by Category (for chart) ---
+        const categoryCounts = {}
+        resolvedData.forEach(c => {
+          const cat = c.category || 'other'
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
+        })
+
+        const categoryColors = {
+          roads: '#FF6B35', water: '#4299E1', sanitation: '#38A169',
+          electricity: '#ED8936', safety: '#E53E3E', transport: '#805AD5',
+          health: '#E53E3E', education: '#3182CE', environment: '#38A169', other: '#718096'
+        }
+
+        const categoryArray = Object.keys(categoryCounts).map(cat => ({
+          name: cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' '),
+          resolved: categoryCounts[cat],
+          color: categoryColors[cat] || '#718096'
+        })).sort((a, b) => b.resolved - a.resolved) // Sort highest first
+
+        setCategoryPerformance(categoryArray.length > 0 ? categoryArray : [{ name: 'No Data', resolved: 0, color: '#718096' }])
+
+      } catch (err) {
+        console.error('Failed to load performance metrics:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPerformance()
+  }, [])
+
+  if (loading) {
+    return (
+      <DashboardLayout role="officer" menuItems={menuItems} title="My Performance">
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
+          Loading your performance data...
+        </div>
+      </DashboardLayout>
+    )
   }
-
-  const monthlyData = [
-    { month: 'Apr', resolved: 22, sla: 88, rating: 4.5, avgDays: 4.2 },
-    { month: 'May', resolved: 26, sla: 90, rating: 4.6, avgDays: 4.0 },
-    { month: 'Jun', resolved: 28, sla: 91, rating: 4.6, avgDays: 3.9 },
-    { month: 'Jul', resolved: 30, sla: 92, rating: 4.7, avgDays: 3.8 },
-    { month: 'Aug', resolved: 32, sla: 93, rating: 4.8, avgDays: 3.7 },
-    { month: 'Sep', resolved: 30, sla: 94, rating: 4.8, avgDays: 3.6 }
-  ]
-
-  const categoryPerformance = [
-    { name: 'Roads & Infrastructure', resolved: 48, avgDays: 3.9, color: '#FF6B35' },
-    { name: 'Water Supply', resolved: 32, avgDays: 3.5, color: '#4299E1' },
-    { name: 'Sanitation', resolved: 42, avgDays: 3.6, color: '#38A169' },
-    { name: 'Electricity', resolved: 28, avgDays: 4.2, color: '#ED8936' },
-    { name: 'Public Safety', resolved: 18, avgDays: 4.5, color: '#E53E3E' }
-  ]
-
-  const achievements = [
-    { icon: '🏆', title: 'Top Performer', desc: 'Ranked #1 in department', color: '#FFD700' },
-    { icon: '⚡', title: 'Fast Responder', desc: 'Avg 3.8 days resolution', color: '#FF6B35' },
-    { icon: '⭐', title: 'Highly Rated', desc: '4.7+ citizen rating', color: '#F7931E' },
-    { icon: '🎯', title: 'SLA Champion', desc: '92% SLA compliance', color: '#38A169' }
-  ]
 
   return (
     <DashboardLayout role="officer" menuItems={menuItems} title="My Performance">
@@ -58,134 +145,121 @@ const PerformanceMetrics = () => {
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>📈 My Performance</h2>
-            <p style={{ fontSize: '14px', opacity: 0.9 }}>Track your efficiency and achievements</p>
-          </div>
-          <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.15)', padding: '4px', borderRadius: '10px' }}>
-            {['week', 'month', 'quarter', 'year'].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                style={{ padding: '8px 16px', background: period === p ? 'white' : 'transparent', color: period === p ? '#1a202c' : 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize' }}
-              >
-                {p}
-              </button>
-            ))}
+            {/* ✅ FIXED: Explicit white color for readability on dark background */}
+            <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF' }}>📈 My Performance</h2>
+            <p style={{ fontSize: '14px', opacity: 0.9, color: '#E2E8F0' }}>Track your efficiency and resolution stats</p>
           </div>
         </div>
 
         {/* KPI Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #38A169' }}>
+          
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #38A169' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-              <div style={{ width: '44px', height: '44px', background: '#38A16920', color: '#38A169', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>✅</div>
-              <div style={{ fontSize: '12px', color: '#718096', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resolved</div>
+              <div style={{ width: '44px', height: '44px', background: 'rgba(56, 161, 105, 0.1)', color: '#38A169', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>✅</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resolved</div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a202c', lineHeight: 1, marginBottom: '4px' }}>{stats.resolved}</div>
-            <div style={{ fontSize: '11px', color: '#38A169', fontWeight: '700' }}>↑ 12% vs last period</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px' }}>{stats.resolved}</div>
+            <div style={{ fontSize: '11px', color: '#38A169', fontWeight: '700' }}>Total resolved cases</div>
           </div>
 
-          <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #4299E1' }}>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #4299E1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-              <div style={{ width: '44px', height: '44px', background: '#4299E120', color: '#4299E1', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏱️</div>
-              <div style={{ fontSize: '12px', color: '#718096', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Resolution</div>
+              <div style={{ width: '44px', height: '44px', background: 'rgba(66, 153, 225, 0.1)', color: '#4299E1', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⏱️</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Resolution</div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a202c', lineHeight: 1, marginBottom: '4px' }}>{stats.avgResolution}d</div>
-            <div style={{ fontSize: '11px', color: '#38A169', fontWeight: '700' }}>↓ 0.4d faster than avg</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px' }}>{stats.avgResolutionDays}d</div>
+            <div style={{ fontSize: '11px', color: '#4299E1', fontWeight: '700' }}>Average time to close</div>
           </div>
 
-          <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #805AD5' }}>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #805AD5' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-              <div style={{ width: '44px', height: '44px', background: '#805AD520', color: '#805AD5', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📈</div>
-              <div style={{ fontSize: '12px', color: '#718096', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SLA Compliance</div>
+              <div style={{ width: '44px', height: '44px', background: 'rgba(128, 90, 213, 0.1)', color: '#805AD5', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📈</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Resolution Rate</div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a202c', lineHeight: 1, marginBottom: '4px' }}>{stats.sla}%</div>
-            <div style={{ fontSize: '11px', color: '#38A169', fontWeight: '700' }}>↑ 6 points</div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px' }}>{stats.resolutionRate}%</div>
+            <div style={{ fontSize: '11px', color: '#805AD5', fontWeight: '700' }}>Percentage of cases closed</div>
           </div>
 
-          <div style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '4px solid #F7931E' }}>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #F7931E' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-              <div style={{ width: '44px', height: '44px', background: '#F7931E20', color: '#F7931E', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⭐</div>
-              <div style={{ fontSize: '12px', color: '#718096', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Citizen Rating</div>
+              <div style={{ width: '44px', height: '44px', background: 'rgba(247, 147, 30, 0.1)', color: '#F7931E', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⭐</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Citizen Rating</div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a202c', lineHeight: 1, marginBottom: '4px' }}>{stats.rating}</div>
-            <div style={{ fontSize: '11px', color: '#38A169', fontWeight: '700' }}>Top 10% rated</div>
-          </div>
-        </div>
-
-        {/* Achievements */}
-        <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '20px' }}>🏆 Achievements</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-            {achievements.map((a, i) => (
-              <div key={i} style={{ padding: '16px', background: '#f7fafc', borderRadius: '12px', display: 'flex', gap: '12px', alignItems: 'center', borderLeft: `3px solid ${a.color}` }}>
-                <div style={{ width: '48px', height: '48px', background: a.color + '20', color: a.color, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
-                  {a.icon}
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1a202c', marginBottom: '2px' }}>{a.title}</div>
-                  <div style={{ fontSize: '11px', color: '#718096' }}>{a.desc}</div>
-                </div>
-              </div>
-            ))}
+            <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px' }}>{stats.avgRating > 0 ? stats.avgRating : '—'}</div>
+            <div style={{ fontSize: '11px', color: '#F7931E', fontWeight: '700' }}>From citizen feedback</div>
           </div>
         </div>
 
         {/* Two Column */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
           {/* Monthly Trend */}
-          <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '20px' }}>📊 Monthly Progress</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {monthlyData.map((m) => (
-                <div key={m.month} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '40px', fontSize: '13px', fontWeight: '700', color: '#1a202c', flexShrink: 0 }}>{m.month}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                      <span style={{ color: '#718096' }}>Resolved</span>
-                      <span style={{ fontWeight: '800', color: '#38A169' }}>{m.resolved}</span>
-                    </div>
-                    <div style={{ height: '8px', background: '#edf2f7', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${(m.resolved / 35) * 100}%`, height: '100%', background: '#38A169', borderRadius: '4px' }}></div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>📊 Monthly Progress</h3>
+            {monthlyData.length === 0 || monthlyData[0].month === 'No Data' ? (
+              <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>No resolved cases yet to chart.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {monthlyData.map((m) => (
+                  <div key={m.month} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ width: '40px', fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', flexShrink: 0 }}>{m.month}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                        <span style={{ color: 'var(--text-tertiary)' }}>Resolved</span>
+                        <span style={{ fontWeight: '800', color: '#38A169' }}>{m.resolved}</span>
+                      </div>
+                      <div style={{ height: '8px', background: 'var(--bg-surface-secondary)', borderRadius: '4px', overflow: 'hidden' }}>
+                        {/* Max value for scaling: use 10 or highest count */}
+                        <div style={{ width: `${Math.min((m.resolved / 10) * 100, 100)}%`, height: '100%', background: '#38A169', borderRadius: '4px' }}></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* By Category */}
-          <div style={{ background: 'white', borderRadius: '14px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a202c', marginBottom: '20px' }}>📁 By Category</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {categoryPerformance.map((c) => (
-                <div key={c.name}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
-                    <span style={{ fontWeight: '600', color: '#2d3748' }}>{c.name}</span>
-                    <span style={{ fontWeight: '800', color: c.color }}>{c.resolved} resolved</span>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>📁 By Category</h3>
+            {categoryPerformance.length === 0 || categoryPerformance[0].name === 'No Data' ? (
+              <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>No resolved cases to categorize.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {categoryPerformance.map((c) => (
+                  <div key={c.name}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                      <span style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>{c.name}</span>
+                      <span style={{ fontWeight: '800', color: c.color }}>{c.resolved} resolved</span>
+                    </div>
+                    <div style={{ height: '6px', background: 'var(--bg-surface-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min((c.resolved / stats.resolved) * 100, 100)}%`, height: '100%', background: c.color, borderRadius: '3px' }}></div>
+                    </div>
                   </div>
-                  <div style={{ height: '6px', background: '#edf2f7', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: `${(c.resolved / 50) * 100}%`, height: '100%', background: c.color, borderRadius: '3px' }}></div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Rating Box */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.05), rgba(247, 147, 30, 0.1))', borderRadius: '14px', padding: '24px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', border: '1px solid rgba(255, 107, 53, 0.2)' }}>
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ fontSize: '56px', fontWeight: '800', color: '#FF6B35', lineHeight: 1 }}>{stats.avgRating > 0 ? stats.avgRating : '—'}</div>
+            <div style={{ fontSize: '20px', color: '#F7931E', marginTop: '6px' }}>
+              {stats.avgRating > 0 ? '⭐⭐⭐⭐⭐' : 'No ratings yet'}
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: '240px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>Citizen Feedback</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+              {stats.avgRating > 0 
+                ? `You have an average rating of ${stats.avgRating}/5 based on the feedback submitted by citizens for your resolved cases.`
+                : `Citizens haven't submitted feedback for your resolved cases yet. When they do, their ratings will appear here.`}
             </div>
           </div>
         </div>
 
-        {/* Rating */}
-        <div style={{ background: 'linear-gradient(135deg, #FFF5F0, #FFE8D6)', borderRadius: '14px', padding: '24px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-          <div style={{ textAlign: 'center', flexShrink: 0 }}>
-            <div style={{ fontSize: '56px', fontWeight: '800', color: '#FF6B35', lineHeight: 1 }}>{stats.rating}</div>
-            <div style={{ fontSize: '20px', color: '#F7931E', marginTop: '6px' }}>⭐⭐⭐⭐⭐</div>
-          </div>
-          <div style={{ flex: 1, minWidth: '240px' }}>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#1a202c', marginBottom: '6px' }}>Excellent Rating!</div>
-            <div style={{ fontSize: '13px', color: '#744210', lineHeight: 1.6 }}>
-              You're in the top 10% of officers with a {stats.rating}/5 average. Citizens consistently praise your timely and professional service.
-            </div>
-          </div>
-        </div>
       </div>
     </DashboardLayout>
   )

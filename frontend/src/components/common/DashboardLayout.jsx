@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { api } from '../../services/api'
 import './DashboardLayout.css'
 
 const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }) => {
@@ -11,6 +12,8 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  
+  const [notifications, setNotifications] = useState([])
 
   // Detect mobile on load
   useEffect(() => {
@@ -32,6 +35,20 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
     setProfileOpen(false)
     setNotificationsOpen(false)
   }, [location.pathname])
+
+  // Fetch real notifications from backend
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get('/notifications')
+        const raw = res.data?.notifications || res.data?.data || []
+        setNotifications(Array.isArray(raw) ? raw : [])
+      } catch (err) {
+        setNotifications([])
+      }
+    }
+    fetchNotifications()
+  }, [])
 
   // Prevent body scroll when mobile menu open
   useEffect(() => {
@@ -66,7 +83,6 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
     system_admin: 'System Admin'
   }
 
-  // Get initials from name
   const getInitials = (name) => {
     if (!name) return 'U'
     return name
@@ -74,6 +90,36 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
       .map((w) => w.charAt(0).toUpperCase())
       .slice(0, 2)
       .join('')
+  }
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  // ✅ Hardcoded paths to prevent 404s
+  const getProfilePath = () => {
+    if (role === 'citizen') return '/citizen/profile'
+    if (role === 'department_admin') return '/department/profile'
+    if (role === 'higher_authority') return '/authority/profile'
+    if (role === 'system_admin') return '/admin/profile'
+    if (role === 'officer') return '/officer/profile'
+    return '/'
+  }
+
+  const getSettingsPath = () => {
+    if (role === 'citizen') return '/citizen/profile'
+    if (role === 'department_admin') return '/department/settings'
+    if (role === 'higher_authority') return '/authority/settings'
+    if (role === 'system_admin') return '/admin/settings'
+    if (role === 'officer') return '/officer/dashboard'
+    return '/'
+  }
+
+  const getNotificationsPath = () => {
+    if (role === 'citizen') return '/citizen/notifications'
+    if (role === 'department_admin') return '/department/notifications'
+    if (role === 'higher_authority') return '/authority/notifications'
+    if (role === 'system_admin') return '/admin/notifications'
+    if (role === 'officer') return '/officer/notifications'
+    return '/'
   }
 
   return (
@@ -86,15 +132,12 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
         ></div>
       )}
 
-      {/* ================================
-          SIDEBAR
-          ================================ */}
+      {/* SIDEBAR */}
       <aside
         className={`dl-sidebar ${sidebarOpen ? 'open' : 'closed'} ${
           mobileOpen ? 'mobile-open' : ''
         }`}
       >
-        {/* Logo */}
         <div className="dl-sidebar-header">
           <Link to="/" className="dl-logo">
             <span className="dl-logo-icon">🇮🇳</span>
@@ -109,7 +152,6 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
           </button>
         </div>
 
-        {/* Role Badge */}
         {sidebarOpen && (
           <div className="dl-role-badge">
             <span className="dl-role-icon">{roleLabels[role]?.split(' ')[0]}</span>
@@ -117,7 +159,6 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
           </div>
         )}
 
-        {/* Navigation */}
         <nav className="dl-nav">
           {menuItems.map((item, index) => {
             const isActive =
@@ -144,7 +185,6 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
           })}
         </nav>
 
-        {/* User Card */}
         <div className="dl-sidebar-footer">
           <div className="dl-user-card">
             <div className="dl-user-avatar">
@@ -169,13 +209,9 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
         </div>
       </aside>
 
-      {/* ================================
-          MAIN CONTENT
-          ================================ */}
+      {/* MAIN CONTENT */}
       <main className="dl-main">
-        {/* Top Bar */}
         <header className="dl-topbar">
-          {/* Left: Mobile menu + Title */}
           <div className="dl-topbar-left">
             <button
               className="dl-mobile-menu-btn"
@@ -197,9 +233,7 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
             </div>
           </div>
 
-          {/* Right: Actions + Profile */}
           <div className="dl-topbar-right">
-            {/* Search (hidden on mobile) */}
             <div className="dl-search-wrapper">
               <span className="dl-search-icon">🔍</span>
               <input
@@ -220,37 +254,69 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
                 title="Notifications"
               >
                 🔔
-                <span className="dl-notification-dot"></span>
+                {unreadCount > 0 && (
+                  <span className="dl-notification-dot"></span>
+                )}
               </button>
 
               {notificationsOpen && (
                 <div className="dl-dropdown dl-notif-dropdown">
                   <div className="dl-dropdown-header">
                     <span className="dl-dropdown-title">🔔 Notifications</span>
-                    <span className="dl-dropdown-badge">3 new</span>
+                    {unreadCount > 0 && (
+                      <span className="dl-dropdown-badge">
+                        {unreadCount} new
+                      </span>
+                    )}
                   </div>
                   <div className="dl-dropdown-body">
-                    {[
-                      { icon: '✅', title: 'Complaint resolved', msg: 'JV2026002 has been resolved', time: '2 min ago' },
-                      { icon: '👤', title: 'Officer assigned', msg: 'Officer Ravi assigned to JV2026004', time: '1 hour ago' },
-                      { icon: '🚨', title: 'Emergency acknowledged', msg: 'Your emergency report was received', time: '3 hours ago' }
-                    ].map((n, i) => (
-                      <div key={i} className="dl-notif-item">
-                        <div className="dl-notif-icon">{n.icon}</div>
-                        <div className="dl-notif-content">
-                          <div className="dl-notif-title">{n.title}</div>
-                          <div className="dl-notif-msg">{n.msg}</div>
-                          <div className="dl-notif-time">{n.time}</div>
+                    {notifications.length === 0 ? (
+                      <div
+                        style={{
+                          padding: '32px 20px',
+                          textAlign: 'center',
+                          color: 'var(--text-tertiary)'
+                        }}
+                      >
+                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>
+                          📭
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            marginBottom: '4px'
+                          }}
+                        >
+                          No notifications yet
+                        </div>
+                        <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                          You're all caught up!
                         </div>
                       </div>
-                    ))}
+                    ) : (
+                      notifications.slice(0, 5).map((n, i) => (
+                        <div key={n._id || i} className="dl-notif-item">
+                          <div className="dl-notif-icon">
+                            {n.icon || '🔔'}
+                          </div>
+                          <div className="dl-notif-content">
+                            <div className="dl-notif-title">
+                              {n.title || 'Notification'}
+                            </div>
+                            <div className="dl-notif-msg">
+                              {n.message || ''}
+                            </div>
+                            <div className="dl-notif-time">
+                              {n.time || ''}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                   <Link
-                    to={
-                      role === 'citizen'
-                        ? '/citizen/notifications'
-                        : `/${role}/notifications`
-                    }
+                    to={getNotificationsPath()}
                     className="dl-dropdown-footer"
                   >
                     View All →
@@ -303,8 +369,8 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
                   <div className="dl-dropdown-divider"></div>
 
                   {[
-                    { icon: '👤', label: 'My Profile', path: `/${role.replace('_', '-')}/profile` },
-                    { icon: '⚙️', label: 'Settings', path: `/${role.replace('_', '-')}/settings` },
+                    { icon: '👤', label: 'My Profile', path: getProfilePath() },
+                    { icon: '⚙️', label: 'Settings', path: getSettingsPath() },
                     { icon: '🔒', label: 'Security', path: '/forgot-password' }
                   ].map((item) => (
                     <Link
@@ -332,12 +398,10 @@ const DashboardLayout = ({ children, role, menuItems = [], title = 'Dashboard' }
           </div>
         </header>
 
-        {/* Content Area */}
         <div className="dl-content">
           {children}
         </div>
 
-        {/* Footer */}
         <footer className="dl-footer">
           <div className="dl-footer-left">
             © {new Date().getFullYear()} JanVoice | Government of India Initiative

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../common/DashboardLayout'
 import { useAuth } from '../../context/AuthContext'
-import { api } from '../../services/api' // 👈 Added API import
+import { api } from '../../services/api'
 import StatCard from '../common/StatCard'
 import './CitizenDashboard.css'
 
@@ -81,6 +81,7 @@ const CitizenDashboard = () => {
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         )
         const formattedRecent = sortedComplaints.slice(0, 3).map((c) => ({
+          _id: c._id, // ✅ Mongo _id for navigation
           id: c.complaintId || c._id || 'N/A',
           title:
             c.title ||
@@ -100,7 +101,7 @@ const CitizenDashboard = () => {
         }))
         setRecentComplaints(formattedRecent)
 
-        // Build activity from recent complaints (since we don't have a dedicated activity API yet)
+        // Build activity from recent complaints
         const activityItems = formattedRecent.map((c) => ({
           icon: c.status === 'resolved' ? '✅' : '🚧',
           text: `Complaint ${c.id} is ${c.status.replace('-', ' ')}`,
@@ -194,7 +195,7 @@ const CitizenDashboard = () => {
           </div>
         </div>
 
-        {/* Emergency Alert (if any) */}
+        {/* Emergency Alert */}
         {stats.emergency > 0 && (
           <div className="cd-emergency-alert">
             <div className="cd-emergency-icon">🚨</div>
@@ -215,30 +216,10 @@ const CitizenDashboard = () => {
 
         {/* Stats Grid */}
         <div className="cd-stats-grid">
-          <StatCard
-            icon="📋"
-            label="Total Complaints"
-            value={stats.total}
-            color="#FF6B35"
-          />
-          <StatCard
-            icon="⏳"
-            label="Pending"
-            value={stats.pending}
-            color="#ED8936"
-          />
-          <StatCard
-            icon="🚧"
-            label="In Progress"
-            value={stats.active}
-            color="#3182CE"
-          />
-          <StatCard
-            icon="✅"
-            label="Resolved"
-            value={stats.resolved}
-            color="#38A169"
-          />
+          <StatCard icon="📋" label="Total Complaints" value={stats.total} color="#FF6B35" />
+          <StatCard icon="⏳" label="Pending" value={stats.pending} color="#ED8936" />
+          <StatCard icon="🚧" label="In Progress" value={stats.active} color="#3182CE" />
+          <StatCard icon="✅" label="Resolved" value={stats.resolved} color="#38A169" />
         </div>
 
         {/* Quick Actions */}
@@ -246,33 +227,25 @@ const CitizenDashboard = () => {
           <h3 className="cd-section-title">⚡ Quick Actions</h3>
           <div className="cd-actions-grid">
             <Link to="/citizen/submit" className="cd-action-card">
-              <div className="cd-action-icon" style={{ background: '#FF6B35' }}>
-                📝
-              </div>
+              <div className="cd-action-icon" style={{ background: '#FF6B35' }}>📝</div>
               <div className="cd-action-label">New Complaint</div>
               <div className="cd-action-desc">Report a civic issue</div>
             </Link>
 
             <Link to="/citizen/track" className="cd-action-card">
-              <div className="cd-action-icon" style={{ background: '#4299E1' }}>
-                🔍
-              </div>
+              <div className="cd-action-icon" style={{ background: '#4299E1' }}>🔍</div>
               <div className="cd-action-label">Track Status</div>
               <div className="cd-action-desc">Check complaint status</div>
             </Link>
 
             <Link to="/citizen/emergency" className="cd-action-card cd-action-emergency">
-              <div className="cd-action-icon" style={{ background: '#E53E3E' }}>
-                🚨
-              </div>
+              <div className="cd-action-icon" style={{ background: '#E53E3E' }}>🚨</div>
               <div className="cd-action-label">Emergency</div>
               <div className="cd-action-desc">Report urgent issue</div>
             </Link>
 
             <Link to="/citizen/history" className="cd-action-card">
-              <div className="cd-action-icon" style={{ background: '#805AD5' }}>
-                📜
-              </div>
+              <div className="cd-action-icon" style={{ background: '#805AD5' }}>📜</div>
               <div className="cd-action-label">History</div>
               <div className="cd-action-desc">Past complaints</div>
             </Link>
@@ -285,18 +258,14 @@ const CitizenDashboard = () => {
           <div className="cd-card cd-card-large">
             <div className="cd-card-header">
               <h3 className="cd-card-title">📋 Recent Complaints</h3>
-              <Link to="/citizen/complaints" className="cd-link">
-                View All →
-              </Link>
+              <Link to="/citizen/complaints" className="cd-link">View All →</Link>
             </div>
 
             {recentComplaints.length === 0 ? (
               <div className="cd-empty">
                 <div className="cd-empty-icon">📭</div>
                 <p>No complaints yet</p>
-                <Link to="/citizen/submit" className="cd-empty-btn">
-                  Submit First Complaint
-                </Link>
+                <Link to="/citizen/submit" className="cd-empty-btn">Submit First Complaint</Link>
               </div>
             ) : (
               <div className="cd-complaints-list">
@@ -305,9 +274,9 @@ const CitizenDashboard = () => {
                   const priority = getPriorityConfig(c.priority)
                   return (
                     <div
-                      key={c.id}
+                      key={c._id}
                       className="cd-complaint-row"
-                      onClick={() => navigate(`/citizen/complaint/${c.id}`)}
+                      onClick={() => navigate(`/citizen/complaints/${c._id}`)} // ✅ FIXED
                     >
                       <div className="cd-complaint-left">
                         <div
@@ -347,9 +316,7 @@ const CitizenDashboard = () => {
           <div className="cd-card">
             <div className="cd-card-header">
               <h3 className="cd-card-title">🔔 Recent Activity</h3>
-              <Link to="/citizen/notifications" className="cd-link">
-                View All →
-              </Link>
+              <Link to="/citizen/notifications" className="cd-link">View All →</Link>
             </div>
 
             {recentActivity.length === 0 ? (
@@ -386,12 +353,8 @@ const CitizenDashboard = () => {
             <p>Our support team is available 24/7 to assist you with your complaints.</p>
           </div>
           <div className="cd-help-actions">
-            <a href="tel:1800-XXX-XXXX" className="cd-help-btn">
-              📞 Call 1800-XXX-XXXX
-            </a>
-            <a href="mailto:support@janvoice.gov.in" className="cd-help-btn secondary">
-              ✉️ Email Support
-            </a>
+            <a href="tel:1800-XXX-XXXX" className="cd-help-btn">📞 Call 1800-XXX-XXXX</a>
+            <a href="mailto:support@janvoice.gov.in" className="cd-help-btn secondary">✉️ Email Support</a>
           </div>
         </div>
 
