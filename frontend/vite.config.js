@@ -40,12 +40,6 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000',
           changeOrigin: true,
           secure: false,
-          // Uncomment to see proxy logs
-          // configure: (proxy) => {
-          //   proxy.on('proxyReq', (proxyReq, req) => {
-          //     console.log('📤 Proxying:', req.method, req.url)
-          //   })
-          // }
         }
       }
     },
@@ -65,29 +59,30 @@ export default defineConfig(({ mode }) => {
       // Rollup options for chunk splitting
       rollupOptions: {
         output: {
-          // Manual chunk splitting for better caching
-          manualChunks: {
-            // React core
-            'react-vendor': ['react', 'react-dom'],
-
-            // Router
-            'router-vendor': ['react-router-dom'],
-
-            // UI libraries
-            'ui-vendor': [
-              '@mui/material',
-              '@emotion/react',
-              '@emotion/styled'
-            ],
-
-            // Charts
-            'chart-vendor': ['recharts'],
-
-            // Animations
-            'anim-vendor': ['framer-motion'],
-
-            // Icons
-            'icon-vendor': ['react-icons']
+          // ✅ FIXED: manualChunks must be a function for Vite 8+
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react-dom') || id.includes('react/')) {
+                return 'react-vendor'
+              }
+              if (id.includes('react-router')) {
+                return 'router-vendor'
+              }
+              if (id.includes('@mui') || id.includes('@emotion')) {
+                return 'ui-vendor'
+              }
+              if (id.includes('recharts')) {
+                return 'chart-vendor'
+              }
+              if (id.includes('framer-motion')) {
+                return 'anim-vendor'
+              }
+              if (id.includes('react-icons')) {
+                return 'icon-vendor'
+              }
+              // All other node_modules go into a general vendor chunk
+              return 'vendor'
+            }
           },
 
           // File naming patterns
