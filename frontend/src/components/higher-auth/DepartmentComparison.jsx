@@ -25,7 +25,7 @@ const DepartmentComparison = () => {
         const res = await api.get('/authority/departments')
         const data = res.data?.departments || []
 
-        // ✅ Filter out any empty names and map the data
+        // Filter out any empty names and map the data
         const formatted = data
           .filter(d => d.name && d.name.trim() !== '')
           .map((d, i) => {
@@ -47,7 +47,7 @@ const DepartmentComparison = () => {
 
         setAllDepartments(formatted)
         
-        // Auto-select up to 3 departments
+        // ✅ FIX: Auto-select the first 3 departments for initial view
         if (formatted.length > 0) {
           setSelectedDepts(formatted.slice(0, 3).map(d => d.name))
         }
@@ -63,12 +63,14 @@ const DepartmentComparison = () => {
 
   const toggleDept = (name) => {
     if (selectedDepts.includes(name)) {
+      // Don't allow deselecting if it's the only one left
       if (selectedDepts.length > 1) {
         setSelectedDepts(selectedDepts.filter((d) => d !== name))
       } else {
         alert('Select at least 1 department to compare')
       }
     } else {
+      // Limit to 4 selections
       if (selectedDepts.length < 4) {
         setSelectedDepts([...selectedDepts, name])
       } else {
@@ -77,7 +79,11 @@ const DepartmentComparison = () => {
     }
   }
 
-  const selectedData = allDepartments.filter((d) => selectedDepts.includes(d.name))
+  // ✅ FIX: Filter the data to ONLY include currently selected departments
+  // and ensure they maintain the order they were selected
+  const selectedData = selectedDepts.map(deptName => 
+    allDepartments.find(d => d.name === deptName)
+  ).filter(Boolean)
 
   const metrics = [
     { key: 'total', label: 'Total Complaints', icon: '📋', format: (v) => v, higher: true },
@@ -136,8 +142,10 @@ const DepartmentComparison = () => {
                     key={d.name}
                     onClick={() => toggleDept(d.name)}
                     style={{
-                      padding: '10px 18px', background: selectedDepts.includes(d.name) ? d.color : 'var(--bg-surface-secondary)',
-                      color: selectedDepts.includes(d.name) ? 'white' : 'var(--text-secondary)', border: `2px solid ${d.color}`,
+                      padding: '10px 18px', 
+                      background: selectedDepts.includes(d.name) ? d.color : 'var(--bg-surface-secondary)',
+                      color: selectedDepts.includes(d.name) ? 'white' : 'var(--text-secondary)', 
+                      border: `2px solid ${d.color}`,
                       borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
                       display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
                     }}

@@ -18,18 +18,13 @@ const PerformanceMonitor = () => {
   const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // ===================================
-  // FETCH REAL DATA
-  // ===================================
   useEffect(() => {
     const fetchPerformance = async () => {
       try {
         setLoading(true)
         const res = await api.get('/authority/performance')
-        // Backend returns { officers: [...] } or { departments: [...] }
         const rawData = res.data?.officers || res.data?.departments || []
         
-        // Map and sort by SLA descending (highest performance first)
         const formatted = rawData.map((d, index) => ({
           id: d._id || index,
           name: d.department || d.name || 'Unknown Dept',
@@ -38,7 +33,7 @@ const PerformanceMonitor = () => {
           pending: d.pending || 0,
           sla: d.sla || 0,
           avgDays: d.avgDays || 0,
-          rating: d.rating || 4.0, // Backend doesn't have ratings yet, fallback to 4.0
+          rating: d.rating || 0, // ✅ Now uses the real rating from backend
           trend: d.trend || 0
         })).sort((a, b) => b.sla - a.sla)
 
@@ -56,11 +51,12 @@ const PerformanceMonitor = () => {
     fetchPerformance()
   }, [period])
 
+  // ✅ FIXED: Logic for rank badges
   const getRankBadge = (rank) => {
     if (rank === 1) return { icon: '🥇', color: '#FFD700' }
     if (rank === 2) return { icon: '🥈', color: '#C0C0C0' }
     if (rank === 3) return { icon: '🥉', color: '#CD7F32' }
-    return { icon: `#${rank}`, color: '#a0aec0' }
+    return { icon: `#${rank}`, color: '#a0aec0' } // Shows #4, #5, etc.
   }
 
   if (loading) {
@@ -75,7 +71,7 @@ const PerformanceMonitor = () => {
     <DashboardLayout role="higher_authority" menuItems={menuItems} title="Performance Monitor">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* Header Banner - ✅ Fixed white text */}
+        {/* Header Banner */}
         <div style={{ background: 'linear-gradient(135deg, #553C9A, #805AD5)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap', boxShadow: '0 12px 32px rgba(128, 90, 213, 0.25)' }}>
           <div>
             <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
@@ -125,7 +121,10 @@ const PerformanceMonitor = () => {
                         <div style={{ fontSize: '9px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>SLA</div>
                       </div>
                       <div style={{ textAlign: 'center', minWidth: '60px' }}>
-                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#F7931E' }}>⭐ {d.rating}</div>
+                        {/* ✅ If rating is 0, show "N/A" instead of "0.0" */}
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#F7931E' }}>
+                          {d.rating > 0 ? `⭐ ${d.rating}` : '—'}
+                        </div>
                         <div style={{ fontSize: '9px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Rating</div>
                       </div>
                     </div>

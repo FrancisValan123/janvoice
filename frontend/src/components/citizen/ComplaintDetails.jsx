@@ -94,7 +94,8 @@ const ComplaintDetails = () => {
           resolvedAt: c.resolvedAt,
           evidence: c.evidence || [],
           actionEvidence: c.actionEvidence || [],
-          statusHistory: c.statusHistory || []
+          statusHistory: c.statusHistory || [],
+          feedback: c.feedback || null // ✅ Map feedback
         }
 
         setComplaint(formatted)
@@ -163,7 +164,7 @@ const ComplaintDetails = () => {
   }
 
   // ===================================
-  // EVIDENCE RENDERER (shared by both evidence sections)
+  // EVIDENCE RENDERER
   // ===================================
   const renderEvidenceItem = (file, i, isAction = false) => {
     const isImage = file.type === 'image'
@@ -201,7 +202,6 @@ const ComplaintDetails = () => {
                 display: 'block'
               }}
               onError={(e) => {
-                // Fallback to emoji if the image fails to load
                 e.target.style.display = 'none'
                 const parent = e.target.parentNode
                 parent.textContent = '🖼️'
@@ -223,20 +223,13 @@ const ComplaintDetails = () => {
 
         {/* Info */}
         <div className="evidence-info">
-          <div
-            className="evidence-name"
-            title={file.name || file.url}
-          >
+          <div className="evidence-name" title={file.name || file.url}>
             {file.name || file.url?.split('/').pop() || `File ${i + 1}`}
           </div>
           <div className="evidence-size">
-            {file.size
-              ? formatSize(file.size)
-              : file.type || 'file'}
+            {file.size ? formatSize(file.size) : file.type || 'file'}
           </div>
-          {file.note && (
-            <div className="evidence-note">💬 {file.note}</div>
-          )}
+          {file.note && <div className="evidence-note">💬 {file.note}</div>}
         </div>
 
         {/* Open link indicator */}
@@ -289,6 +282,7 @@ const ComplaintDetails = () => {
 
   const status = getStatusConfig(complaint.status)
   const priority = getPriorityConfig(complaint.priority)
+  const hasFeedback = complaint.feedback && complaint.feedback.rating > 0 // ✅ Determine if feedback exists
 
   return (
     <DashboardLayout role="citizen" menuItems={menuItems} title="Complaint Details">
@@ -450,18 +444,51 @@ const ComplaintDetails = () => {
               </div>
             </div>
 
+            {/* ✅ NEW: Feedback Card */}
+            {hasFeedback && (
+              <div className="details-card">
+                <h3 className="details-card-title">⭐ Your Feedback</h3>
+                <div style={{ padding: '16px', background: 'var(--bg-surface-secondary)', borderRadius: '10px' }}>
+                  <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        style={{
+                          fontSize: '20px',
+                          color: star <= complaint.feedback.rating ? '#F7931E' : '#E2E8F0'
+                        }}
+                      >
+                        ⭐
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontStyle: 'italic' }}>
+                    "{complaint.feedback.comment || 'No comment provided'}"
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '8px' }}>
+                    Submitted on {formatDate(complaint.feedback.submittedAt)}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="details-card">
               <h3 className="details-card-title">⚡ Actions</h3>
               <div className="action-buttons">
                 <button className="btn-action primary">💬 Contact Officer</button>
                 <button className="btn-action">🔔 Enable Alerts</button>
-                <button
-                  className="btn-action"
-                  onClick={() => navigate(`/citizen/feedback/${complaint._id}`)}
-                >
-                  ⭐ Give Feedback
-                </button>
+                
+                {/* ✅ Only show Give Feedback if no feedback exists */}
+                {!hasFeedback && (
+                  <button
+                    className="btn-action"
+                    onClick={() => navigate(`/citizen/feedback/${complaint._id}`)}
+                  >
+                    ⭐ Give Feedback
+                  </button>
+                )}
+                
                 <button className="btn-action danger">🚨 Escalate</button>
               </div>
             </div>

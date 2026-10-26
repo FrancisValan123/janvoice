@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './SystemSettings.css'
 
 const SystemSettings = () => {
-  const [settings, setSettings] = useState({
+  // 1. Define default settings
+  const defaultSettings = {
     siteName: 'JanVoice',
     siteTagline: 'National Public Complaint & Action Platform',
     contactEmail: 'support@janvoice.gov.in',
@@ -16,14 +17,37 @@ const SystemSettings = () => {
     highResponseTime: 4,
     normalResponseTime: 24,
     lowResponseTime: 48
+  }
+
+  // 2. Initialize state from localStorage (if exists) or use defaults
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('janvoice_system_settings')
+    return saved ? JSON.parse(saved) : defaultSettings
   })
+
+  const [saved, setSaved] = useState(false)
 
   const handleChange = (field, value) => {
     setSettings((prev) => ({ ...prev, [field]: value }))
+    setSaved(false) // Hide the success message when editing
   }
 
+  // 3. Save to localStorage
   const handleSave = () => {
-    alert('Settings saved successfully!')
+    localStorage.setItem('janvoice_system_settings', JSON.stringify(settings))
+    setSaved(true)
+    
+    // Auto-hide the success message after 3 seconds
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  // 4. Reset to defaults
+  const handleReset = () => {
+    if (window.confirm('Are you sure you want to reset all settings to default?')) {
+      setSettings(defaultSettings)
+      localStorage.removeItem('janvoice_system_settings')
+      alert('Settings reset to defaults.')
+    }
   }
 
   const Toggle = ({ checked, onChange }) => (
@@ -39,6 +63,14 @@ const SystemSettings = () => {
   return (
     <div className="dashboard-content">
       <div className="settings-container">
+        
+        {/* Success Toast */}
+        {saved && (
+          <div style={{ position: 'fixed', top: '24px', right: '24px', background: '#38A169', color: 'white', padding: '14px 24px', borderRadius: '10px', fontWeight: '700', boxShadow: '0 8px 24px rgba(56, 161, 105, 0.3)', zIndex: 1000 }}>
+            ✅ Settings saved successfully!
+          </div>
+        )}
+
         <div className="settings-card">
           <div className="settings-header">
             <h3 className="settings-title">⚙️ General Settings</h3>
@@ -149,7 +181,7 @@ const SystemSettings = () => {
         </div>
 
         <div className="settings-actions">
-          <button className="btn-secondary">Reset to Defaults</button>
+          <button className="btn-secondary" onClick={handleReset}>Reset to Defaults</button>
           <button className="btn-primary" onClick={handleSave}>💾 Save All Settings</button>
         </div>
       </div>

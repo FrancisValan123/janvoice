@@ -6,6 +6,7 @@
 const express = require('express')
 const router = express.Router()
 
+// ✅ Imports for complaint controllers
 const {
   createComplaint,
   getAllComplaints,
@@ -18,8 +19,18 @@ const {
   getOfficerStats,
   deleteComplaint,
   addNote,
-  assignComplaint // ✅ ADDED
+  assignComplaint
 } = require('../controllers/complaintController')
+
+// ✅ Imports for resolution report controllers
+const {
+  submitReport,
+  getMyReports,
+  getReportByComplaint
+} = require('../controllers/resolutionController')
+
+// ✅ NEW IMPORT: Citizen Feedback Controller
+const { giveFeedback } = require('../controllers/citizenController')
 
 const { protect } = require('../middleware/auth')
 const { authorize } = require('../middleware/roleCheck')
@@ -68,6 +79,43 @@ router.get(
 )
 
 // ===================================
+// RESOLUTION REPORT ROUTES
+// ===================================
+
+/**
+ * @route   GET /api/complaints/reports/my
+ * @desc    Get all resolution reports submitted by the logged-in officer
+ * @access  Private (Officer only)
+ */
+router.get(
+  '/reports/my',
+  authorize('officer'),
+  getMyReports
+)
+
+/**
+ * @route   GET /api/complaints/reports/:id
+ * @desc    Get the resolution report for a specific complaint
+ * @access  Private (Officer only)
+ */
+router.get(
+  '/reports/:id',
+  authorize('officer'),
+  getReportByComplaint
+)
+
+/**
+ * @route   POST /api/complaints/reports/:id
+ * @desc    Submit a resolution report for a specific complaint
+ * @access  Private (Officer only)
+ */
+router.post(
+  '/reports/:id',
+  authorize('officer'),
+  submitReport
+)
+
+// ===================================
 // GENERAL ROUTES
 // ===================================
 
@@ -106,7 +154,7 @@ router.get(
 router.put(
   '/:id/assign',
   authorize('department_admin', 'system_admin'),
-  assignComplaint // ✅ ADDED
+  assignComplaint
 )
 
 /**
@@ -119,12 +167,23 @@ router.get('/:id', getComplaintById)
 /**
  * @route   PUT /api/complaints/:id/status
  * @desc    Update the status of a complaint
- * @access  Private (Officer, Dept Admin, System Admin)
+ * @access  Private (Officer, Dept Admin, System Admin, Higher Authority) ✅ FIXED
  */
 router.put(
   '/:id/status',
-  authorize('officer', 'department_admin', 'system_admin'),
+  authorize('officer', 'department_admin', 'system_admin', 'higher_authority'),
   updateStatus
+)
+
+/**
+ * @route   PUT /api/complaints/:id/feedback
+ * @desc    Submit feedback for a resolved complaint
+ * @access  Private (Citizen only)
+ */
+router.put(
+  '/:id/feedback',
+  authorize('citizen'),
+  giveFeedback
 )
 
 /**

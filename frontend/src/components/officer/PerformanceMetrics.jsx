@@ -3,7 +3,6 @@ import DashboardLayout from '../common/DashboardLayout'
 import { api } from '../../services/api'
 
 const PerformanceMetrics = () => {
-  // ✅ FIXED: Removed "Investigate" from sidebar
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/officer/dashboard' },
     { icon: '📋', label: 'Assigned Cases', path: '/officer/assigned' },
@@ -28,15 +27,12 @@ const PerformanceMetrics = () => {
   const [monthlyData, setMonthlyData] = useState([])
   const [categoryPerformance, setCategoryPerformance] = useState([])
 
-  // ===================================
-  // FETCH REAL PERFORMANCE DATA
-  // ===================================
   useEffect(() => {
     const fetchPerformance = async () => {
       try {
         setLoading(true)
 
-        // 1. Fetch official stats
+        // 1. Fetch official stats (Now includes avgRating)
         const statsRes = await api.get('/complaints/officer-stats')
         const officialStats = statsRes.data?.stats || {}
 
@@ -44,7 +40,6 @@ const PerformanceMetrics = () => {
         const complaintsRes = await api.get('/complaints/assigned')
         const rawData = complaintsRes.data?.complaints || complaintsRes.data?.data || []
 
-        // --- Calculate real metrics ---
         const resolvedData = rawData.filter(c => c.status === 'resolved')
         const activeData = rawData.filter(c => ['pending', 'assigned', 'investigating', 'in-progress'].includes(c.status))
 
@@ -60,12 +55,6 @@ const PerformanceMetrics = () => {
         })
         const avgResolutionDays = validResolvedCount > 0 ? (totalDays / validResolvedCount).toFixed(1) : 0
 
-        // Calculate avg rating
-        const ratedComplaints = resolvedData.filter(c => c.feedback?.rating)
-        const avgRating = ratedComplaints.length > 0 
-          ? (ratedComplaints.reduce((sum, c) => sum + c.feedback.rating, 0) / ratedComplaints.length).toFixed(1)
-          : 0
-
         setStats({
           total: officialStats.total || rawData.length,
           resolved: officialStats.resolved || resolvedData.length,
@@ -73,10 +62,10 @@ const PerformanceMetrics = () => {
           resolutionRate: officialStats.resolutionRate || (rawData.length > 0 ? Math.round((resolvedData.length / rawData.length) * 100) : 0),
           active: activeData.length,
           avgResolutionDays,
-          avgRating
+          avgRating: officialStats.avgRating || 0 // ✅ Pull from backend
         })
 
-        // --- Group by Month (for chart) ---
+        // --- Group by Month ---
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         const currentYear = new Date().getFullYear()
         const monthlyCounts = {}
@@ -91,14 +80,13 @@ const PerformanceMetrics = () => {
           }
         })
 
-        // Convert to array for rendering (last 6 months)
         const monthlyArray = Object.keys(monthlyCounts).map(month => ({
           month,
           resolved: monthlyCounts[month]
-        })).slice(-6) // Just show last 6 months with data
+        })).slice(-6)
         setMonthlyData(monthlyArray.length > 0 ? monthlyArray : [{ month: 'No Data', resolved: 0 }])
 
-        // --- Group by Category (for chart) ---
+        // --- Group by Category ---
         const categoryCounts = {}
         resolvedData.forEach(c => {
           const cat = c.category || 'other'
@@ -115,7 +103,7 @@ const PerformanceMetrics = () => {
           name: cat.charAt(0).toUpperCase() + cat.slice(1).replace('_', ' '),
           resolved: categoryCounts[cat],
           color: categoryColors[cat] || '#718096'
-        })).sort((a, b) => b.resolved - a.resolved) // Sort highest first
+        })).sort((a, b) => b.resolved - a.resolved)
 
         setCategoryPerformance(categoryArray.length > 0 ? categoryArray : [{ name: 'No Data', resolved: 0, color: '#718096' }])
 
@@ -142,18 +130,14 @@ const PerformanceMetrics = () => {
   return (
     <DashboardLayout role="officer" menuItems={menuItems} title="My Performance">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div>
-            {/* ✅ FIXED: Explicit white color for readability on dark background */}
             <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF' }}>📈 My Performance</h2>
             <p style={{ fontSize: '14px', opacity: 0.9, color: '#E2E8F0' }}>Track your efficiency and resolution stats</p>
           </div>
         </div>
 
-        {/* KPI Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-          
           <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)', borderLeft: '4px solid #38A169' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <div style={{ width: '44px', height: '44px', background: 'rgba(56, 161, 105, 0.1)', color: '#38A169', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>✅</div>
@@ -191,9 +175,7 @@ const PerformanceMetrics = () => {
           </div>
         </div>
 
-        {/* Two Column */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-          {/* Monthly Trend */}
           <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>📊 Monthly Progress</h3>
             {monthlyData.length === 0 || monthlyData[0].month === 'No Data' ? (
@@ -209,7 +191,6 @@ const PerformanceMetrics = () => {
                         <span style={{ fontWeight: '800', color: '#38A169' }}>{m.resolved}</span>
                       </div>
                       <div style={{ height: '8px', background: 'var(--bg-surface-secondary)', borderRadius: '4px', overflow: 'hidden' }}>
-                        {/* Max value for scaling: use 10 or highest count */}
                         <div style={{ width: `${Math.min((m.resolved / 10) * 100, 100)}%`, height: '100%', background: '#38A169', borderRadius: '4px' }}></div>
                       </div>
                     </div>
@@ -219,7 +200,6 @@ const PerformanceMetrics = () => {
             )}
           </div>
 
-          {/* By Category */}
           <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>📁 By Category</h3>
             {categoryPerformance.length === 0 || categoryPerformance[0].name === 'No Data' ? (
@@ -242,7 +222,6 @@ const PerformanceMetrics = () => {
           </div>
         </div>
 
-        {/* Rating Box */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255, 107, 53, 0.05), rgba(247, 147, 30, 0.1))', borderRadius: '14px', padding: '24px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', border: '1px solid rgba(255, 107, 53, 0.2)' }}>
           <div style={{ textAlign: 'center', flexShrink: 0 }}>
             <div style={{ fontSize: '56px', fontWeight: '800', color: '#FF6B35', lineHeight: 1 }}>{stats.avgRating > 0 ? stats.avgRating : '—'}</div>

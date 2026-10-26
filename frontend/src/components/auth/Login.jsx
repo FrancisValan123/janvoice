@@ -83,7 +83,7 @@ const Login = () => {
       const result = await login({
         email: currentEmail,
         password: currentPassword,
-        role: formData.role
+        role: formData.role // ✅ Passes the selected role
       })
 
       // ✅ If backend says 2FA is required, switch to code input
@@ -112,6 +112,7 @@ const Login = () => {
         }
         navigate(roleRoutes[actualRole] || '/dashboard')
       } else {
+        // ✅ This will now display the "Access denied..." message from the backend
         setServerError(result.message || 'Invalid credentials')
       }
     } catch (error) {

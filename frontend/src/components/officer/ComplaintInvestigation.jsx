@@ -7,7 +7,6 @@ const ComplaintInvestigation = () => {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  // ✅ FIXED: Removed "Investigate" from sidebar
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/officer/dashboard' },
     { icon: '📋', label: 'Assigned Cases', path: '/officer/assigned' },
@@ -45,12 +44,9 @@ const ComplaintInvestigation = () => {
         
         setComplaint(c)
         
-        // Map status history as timeline
-        // Map any existing notes if the backend returns them
         if (c.notes && Array.isArray(c.notes)) {
           setNotes(c.notes)
         } else {
-          // If no notes array, we can still show status history if we want
           setNotes([])
         }
       } catch (err) {
@@ -99,7 +95,7 @@ const ComplaintInvestigation = () => {
   }
 
   // ===================================
-  // HANDLE ADD NOTE (Real API)
+  // HANDLE ADD NOTE
   // ===================================
   const handleAddNote = async () => {
     if (!newNote.trim()) return
@@ -109,15 +105,14 @@ const ComplaintInvestigation = () => {
       const res = await api.post(`/complaints/${id}/notes`, {
         text: newNote,
         type: noteType,
-        isPrivate: false // Optional: add a checkbox for this
+        isPrivate: false
       })
 
-      // Add the newly created note to the top of the list
       const createdNote = res.data?.note || {
         _id: Date.now(),
         text: newNote,
         type: noteType,
-        author: { name: 'You' }, // Assuming backend returns populated author, fallback to "You"
+        author: { name: 'You' },
         time: new Date().toISOString()
       }
 
@@ -131,9 +126,6 @@ const ComplaintInvestigation = () => {
     }
   }
 
-  // ===================================
-  // NO ID / LOADING / ERROR STATES
-  // ===================================
   if (!id) {
     return (
       <DashboardLayout role="officer" menuItems={menuItems} title="Investigate Case">
@@ -170,6 +162,7 @@ const ComplaintInvestigation = () => {
 
   const priority = getPriorityConfig(complaint.priority)
   const status = getStatusConfig(complaint.status)
+  const isResolved = complaint.status === 'resolved'
 
   return (
     <DashboardLayout role="officer" menuItems={menuItems} title="Investigate Case">
@@ -200,7 +193,7 @@ const ComplaintInvestigation = () => {
                 <span>📍 {complaint.location?.address || 'Not specified'}</span>
                 <span>👥 {complaint.affectedPeople || 1} affected</span>
                 <span>📅 {new Date(complaint.createdAt).toLocaleDateString()}</span>
-                {complaint.deadline && (
+                {complaint.deadline && !isResolved && (
                   <span style={{ color: '#E53E3E', fontWeight: '700' }}>⏰ Due: {new Date(complaint.deadline).toLocaleDateString()}</span>
                 )}
               </div>
@@ -213,12 +206,23 @@ const ComplaintInvestigation = () => {
               >
                 📊 Update Status
               </button>
-              <button
-                onClick={() => navigate(`/officer/report/${complaint._id}`)}
-                style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #38A169, #2F855A)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)' }}
-              >
-                ✅ Mark Resolved
-              </button>
+              
+              {/* ✅ FIXED: Conditionally render the button based on status */}
+              {isResolved ? (
+                <button
+                  onClick={() => navigate(`/officer/report/${complaint._id}`)}
+                  style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #38A169, #2F855A)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)' }}
+                >
+                  📄 View Resolution Report
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate(`/officer/report/${complaint._id}`)}
+                  style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #38A169, #2F855A)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)' }}
+                >
+                  ✅ Mark Resolved
+                </button>
+              )}
             </div>
           </div>
 
@@ -230,40 +234,43 @@ const ComplaintInvestigation = () => {
 
         {/* Two Column Layout */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px', alignItems: 'start' }}>
+          
           {/* Left: Notes / Investigation Log */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Add Note */}
-            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>📝 Add Investigation Note</h3>
-              <textarea
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Document your findings, actions taken, or observations..."
-                rows="4"
-                disabled={addingNote}
-                style={{ width: '100%', padding: '14px', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
-              />
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
-                <select
-                  value={noteType}
-                  onChange={(e) => setNoteType(e.target.value)}
+            {/* Add Note (Hidden if Resolved) */}
+            {!isResolved && (
+              <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px' }}>📝 Add Investigation Note</h3>
+                <textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Document your findings, actions taken, or observations..."
+                  rows="4"
                   disabled={addingNote}
-                  style={{ padding: '10px 14px', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', outline: 'none', fontFamily: 'inherit', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
-                >
-                  <option value="observation">👁️ Observation</option>
-                  <option value="action">⚡ Action Taken</option>
-                  <option value="issue">⚠️ Issue Found</option>
-                  <option value="update">📝 General Update</option>
-                </select>
-                <button
-                  onClick={handleAddNote}
-                  disabled={addingNote || !newNote.trim()}
-                  style={{ padding: '12px 24px', background: (!newNote.trim() || addingNote) ? 'var(--border-medium)' : 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: (!newNote.trim() || addingNote) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginLeft: 'auto', boxShadow: (!newNote.trim() || addingNote) ? 'none' : '0 4px 12px rgba(66, 153, 225, 0.3)' }}
-                >
-                  {addingNote ? '⏳ Saving...' : '➕ Add Note'}
-                </button>
+                  style={{ width: '100%', padding: '14px', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '14px', outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
+                />
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px', flexWrap: 'wrap' }}>
+                  <select
+                    value={noteType}
+                    onChange={(e) => setNoteType(e.target.value)}
+                    disabled={addingNote}
+                    style={{ padding: '10px 14px', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '600', outline: 'none', fontFamily: 'inherit', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
+                  >
+                    <option value="observation">👁️ Observation</option>
+                    <option value="action">⚡ Action Taken</option>
+                    <option value="issue">⚠️ Issue Found</option>
+                    <option value="update">📝 General Update</option>
+                  </select>
+                  <button
+                    onClick={handleAddNote}
+                    disabled={addingNote || !newNote.trim()}
+                    style={{ padding: '12px 24px', background: (!newNote.trim() || addingNote) ? 'var(--border-medium)' : 'linear-gradient(135deg, #2C5282, #4299E1)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: (!newNote.trim() || addingNote) ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginLeft: 'auto', boxShadow: (!newNote.trim() || addingNote) ? 'none' : '0 4px 12px rgba(66, 153, 225, 0.3)' }}
+                  >
+                    {addingNote ? '⏳ Saving...' : '➕ Add Note'}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Notes Timeline */}
             <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
@@ -275,9 +282,7 @@ const ComplaintInvestigation = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {notes.map((n, idx) => {
                     const type = getNoteTypeConfig(n.type)
-                    // Handle author being populated object or just a name
                     const authorName = n.author?.name || n.author || 'Officer'
-                    // Handle time formatting
                     const timeStr = n.time ? new Date(n.time).toLocaleString('en-IN') : ''
 
                     return (
@@ -391,21 +396,23 @@ const ComplaintInvestigation = () => {
               </div>
             )}
 
-            {/* Actions */}
-            <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>⚡ Actions</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={() => navigate(`/officer/evidence/${complaint._id}`)} style={{ padding: '12px', background: '#4299E1', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                  📤 Upload Action Evidence
-                </button>
-                <button onClick={() => navigate(`/officer/reassign/${complaint._id}`)} style={{ padding: '12px', background: '#ED8936', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                  🔄 Request Reassignment
-                </button>
-                <button onClick={() => navigate(`/officer/escalate/${complaint._id}`)} style={{ padding: '12px', background: '#E53E3E', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                  🚨 Escalate to Authority
-                </button>
+            {/* Actions (Hidden if Resolved) */}
+            {!isResolved && (
+              <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>⚡ Actions</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button onClick={() => navigate(`/officer/evidence/${complaint._id}`)} style={{ padding: '12px', background: '#4299E1', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                    📤 Upload Action Evidence
+                  </button>
+                  <button onClick={() => navigate(`/officer/reassign/${complaint._id}`)} style={{ padding: '12px', background: '#ED8936', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                    🔄 Request Reassignment
+                  </button>
+                  <button onClick={() => navigate(`/officer/escalate/${complaint._id}`)} style={{ padding: '12px', background: '#E53E3E', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                    🚨 Escalate to Authority
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Timeline (Status History) */}
             <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>

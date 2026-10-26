@@ -29,7 +29,8 @@ const ActionTakenReport = () => {
     const fetchReports = async () => {
       try {
         setLoading(true)
-        const res = await api.get('/authority/reports')
+        // ✅ FIX: Pass the 'period' state as a query parameter
+        const res = await api.get(`/authority/reports?period=${period}`)
         setReports(res.data?.reports || [])
       } catch (err) {
         console.error('Failed to load reports:', err)
@@ -39,7 +40,7 @@ const ActionTakenReport = () => {
     }
 
     fetchReports()
-  }, [period])
+  }, [period]) // 👈 This will re-run the fetch whenever the user clicks a new period button
 
   const getStatusConfig = (status) => {
     const map = {

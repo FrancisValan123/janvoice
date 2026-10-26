@@ -42,7 +42,6 @@ const AdminLayout = () => {
     { icon: '📊', label: 'Dashboard', path: '/admin/dashboard' },
     { icon: '👥', label: 'Users', path: '/admin/users' },
     { icon: '🏛️', label: 'Departments', path: '/admin/departments' },
-    { icon: '📂', label: 'Categories', path: '/admin/categories' },
     { icon: '🔐', label: 'Roles', path: '/admin/roles' },
     { icon: '📋', label: 'Audit Log', path: '/admin/audit' },
     { icon: '💾', label: 'Backups', path: '/admin/backups' },
@@ -61,11 +60,9 @@ const AdminLayout = () => {
   }
 
   const getPageTitle = () => {
-    // Exact match first
     const exact = menuItems.find((item) => item.path === location.pathname)
     if (exact) return exact.label
 
-    // Fallback: startsWith
     const startsWith = menuItems.find((item) =>
       location.pathname.startsWith(item.path)
     )

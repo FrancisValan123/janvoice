@@ -1,0 +1,1922 @@
+{
+  "metadata": {
+    "app": "JanVoice",
+    "version": "1.0.0",
+    "backupDate": "2026-10-26T13:41:27.206Z",
+    "database": "janvoice",
+    "environment": "development",
+    "collections": [
+      {
+        "name": "users",
+        "count": 25
+      },
+      {
+        "name": "complaints",
+        "count": 11
+      },
+      {
+        "name": "notifications",
+        "count": 12
+      },
+      {
+        "name": "auditlogs",
+        "count": 6
+      },
+      {
+        "name": "feedbacks",
+        "count": 2
+      },
+      {
+        "name": "departments",
+        "count": 9
+      },
+      {
+        "name": "categories",
+        "count": 0
+      },
+      {
+        "name": "escalations",
+        "count": 0
+      }
+    ],
+    "totalRecords": 65
+  },
+  "data": {
+    "users": [
+      {
+        "_id": "6aafd5e0ea22437edd860d9a",
+        "name": "Francis Valan",
+        "email": "francis33valan@gmail.com",
+        "phone": "8778905568",
+        "role": "citizen",
+        "isActive": true,
+        "isVerified": false,
+        "createdAt": "2026-09-20T12:47:28.627Z",
+        "updatedAt": "2026-10-19T07:26:19.107Z",
+        "__v": 1,
+        "preferences": {
+          "emailNotifications": true,
+          "language": "en",
+          "smsNotifications": false,
+          "theme": "light"
+        },
+        "lastLogin": "2026-10-19T05:22:44.511Z",
+        "twoFactorEnabled": true,
+        "twoFactorSecret": "PNIXEVJVGZEWMOKSLAVDKXREINQTY4SROYVEWJTUGJLD64TWO5ZQ",
+        "twoFactorBackupCodes": [
+          "08WPP8DT",
+          "XC90ZXPU",
+          "MZGJDSJ9",
+          "OVXDSUI7",
+          "IFMRYOZI",
+          "S0XYLBLE",
+          "AAY013AB",
+          "GLIT7JGE"
+        ],
+        "address": {
+          "street": "123",
+          "city": "Harihara",
+          "state": "Harishara",
+          "pincode": "123456"
+        }
+      },
+      {
+        "_id": "6aafd718ea22437edd860da7",
+        "name": "Muthaiya",
+        "email": "fvalan77@gmail.com",
+        "phone": "8778905568",
+        "role": "officer",
+        "isActive": true,
+        "isVerified": false,
+        "createdAt": "2026-09-20T12:52:40.563Z",
+        "updatedAt": "2026-10-26T12:03:44.771Z",
+        "__v": 0,
+        "preferences": {
+          "emailNotifications": true,
+          "language": "en",
+          "smsNotifications": false,
+          "theme": "light"
+        },
+        "twoFactorEnabled": false,
+        "lastLogin": "2026-10-26T12:03:44.769Z",
+        "department": "Public Works"
+      },
+      {
+        "_id": "6ab7c7c6704688956b350525",
+        "name": "Jenifa",
+        "email": "alis33alex@gmail.com",
+        "phone": "",
+        "role": "citizen",
+        "isActive": true,
+        "isVerified": false,
+        "createdAt": "2026-09-26T13:25:26.948Z",
+        "updatedAt": "2026-09-26T13:25:26.948Z",
+        "__v": 0
+      },
+      {
+        "_id": "6ac29defd9e0e8d698cd66aa",
+        "name": "Francis Test",
+        "email": "francis@test.com",
+        "phone": "9876543210",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "citizen",
+        "department": null,
+        "zone": null,
+        "isActive": true,
+        "isVerified": false,
+        "lastLogin": null,
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-04T18:41:51.947Z",
+        "updatedAt": "2026-10-04T18:41:51.947Z",
+        "__v": 0
+      },
+      {
+        "_id": "6accbcac6dd2c345a47b0419",
+        "name": "Francis",
+        "email": "francisvalann@gmail.com",
+        "phone": "",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "citizen",
+        "department": null,
+        "zone": null,
+        "isActive": true,
+        "isVerified": false,
+        "lastLogin": "2026-10-26T13:35:40.915Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-12T10:55:40.903Z",
+        "updatedAt": "2026-10-26T13:35:40.925Z",
+        "__v": 0
+      },
+      {
+        "_id": "6acd0cbd860863741904b1e5",
+        "name": "System Administrator",
+        "email": "admin@janvoice.gov.in",
+        "phone": "9999999999",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "system_admin",
+        "department": null,
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T13:36:08.416Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-12T16:37:17.402Z",
+        "updatedAt": "2026-10-26T13:36:08.417Z",
+        "__v": 0
+      },
+      {
+        "_id": "6acdb5d8a3dbceb645c9948a",
+        "name": "Barath",
+        "email": "barath@janvoice.gov.in",
+        "phone": "9176432479",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "higher_authority",
+        "department": null,
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T05:56:22.527Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-13T04:38:48.020Z",
+        "updatedAt": "2026-10-26T05:56:22.529Z",
+        "__v": 0
+      },
+      {
+        "_id": "6acdbbc1a3dbceb645c994ea",
+        "name": "Nisha",
+        "email": "nisha@fathima.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Public Works",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T12:09:44.501Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-13T05:04:01.300Z",
+        "updatedAt": "2026-10-26T12:09:44.502Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf262a98205668a3fc8298",
+        "name": "Malar",
+        "email": "malar123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Sanitation",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:06:34.162Z",
+        "updatedAt": "2026-10-26T10:06:34.162Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf267498205668a3fc829f",
+        "name": "Kiruthiga",
+        "email": "kiki@kiki.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Sanitation",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:07:48.604Z",
+        "updatedAt": "2026-10-26T10:07:48.604Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf26e498205668a3fc82a6",
+        "name": "Sitharth",
+        "email": "sith123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Water Supply",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:09:40.422Z",
+        "updatedAt": "2026-10-26T10:09:40.422Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf272598205668a3fc82ad",
+        "name": "Abi",
+        "email": "abi@abi.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Water Supply",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:10:45.331Z",
+        "updatedAt": "2026-10-26T10:10:45.331Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf276498205668a3fc82b4",
+        "name": "Bala",
+        "email": "bala123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Electricity",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:11:48.724Z",
+        "updatedAt": "2026-10-26T10:11:48.724Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf27c398205668a3fc82bb",
+        "name": "Priya",
+        "email": "priya@dharshini.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Electricity",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:13:23.752Z",
+        "updatedAt": "2026-10-26T10:13:23.752Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf282e98205668a3fc82c2",
+        "name": "Deepak",
+        "email": "deepak123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Transport",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T12:18:26.741Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:15:10.869Z",
+        "updatedAt": "2026-10-26T12:18:26.742Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf285e98205668a3fc82c9",
+        "name": "Sakthi",
+        "email": "sakthi@kaleeswaran.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Transport",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:15:58.556Z",
+        "updatedAt": "2026-10-26T10:15:58.556Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf28d698205668a3fc82d0",
+        "name": "Raja",
+        "email": "raja123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Education",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:17:58.809Z",
+        "updatedAt": "2026-10-26T10:17:58.809Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf290098205668a3fc82d7",
+        "name": "Saravana",
+        "email": "saravana@saravana.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Education",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:18:40.075Z",
+        "updatedAt": "2026-10-26T10:18:40.075Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf292898205668a3fc82de",
+        "name": "Puvanesh",
+        "email": "puvanesh123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Health",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:19:20.484Z",
+        "updatedAt": "2026-10-26T10:19:20.484Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf295e98205668a3fc82e5",
+        "name": "Sabari",
+        "email": "sabari@sabari.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Health",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:20:14.984Z",
+        "updatedAt": "2026-10-26T10:20:14.984Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf2a2398205668a3fc82ec",
+        "name": "Japhney",
+        "email": "japhney123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "Environment",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T12:28:57.317Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:23:31.185Z",
+        "updatedAt": "2026-10-26T12:28:57.319Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf2a4998205668a3fc82f3",
+        "name": "Selva",
+        "email": "selva@gayathri.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "Environment",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": null,
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:24:09.484Z",
+        "updatedAt": "2026-10-26T10:24:09.484Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf2af898205668a3fc82fa",
+        "name": "Alice",
+        "email": "alice123@gmail.com",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "officer",
+        "department": "General",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T12:12:08.777Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:27:04.038Z",
+        "updatedAt": "2026-10-26T12:12:08.778Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf2b1698205668a3fc8301",
+        "name": "Kanaga",
+        "email": "kanaga@kanaga.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "department_admin",
+        "department": "General",
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T12:27:47.608Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:27:34.284Z",
+        "updatedAt": "2026-10-26T12:27:47.627Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf2b9498205668a3fc8308",
+        "name": "Lakshmi",
+        "email": "lakshmi@janvoice.gov.in",
+        "profileImage": null,
+        "profileImagePublicId": null,
+        "role": "higher_authority",
+        "department": null,
+        "zone": null,
+        "isActive": true,
+        "isVerified": true,
+        "lastLogin": "2026-10-26T10:31:31.041Z",
+        "twoFactorEnabled": false,
+        "twoFactorBackupCodes": [],
+        "preferences": {
+          "language": "en",
+          "theme": "light",
+          "emailNotifications": true,
+          "smsNotifications": false
+        },
+        "createdAt": "2026-10-26T10:29:40.248Z",
+        "updatedAt": "2026-10-26T10:31:31.042Z",
+        "__v": 0
+      }
+    ],
+    "complaints": [
+      {
+        "_id": "6ac60af203688db30a08fef9",
+        "complaintId": "JV20260001",
+        "title": "sbdhdwiajhio",
+        "description": "nzjcnsivnz caijdiajf sjnciajdw jcijwfaej",
+        "category": "roads",
+        "priority": "low",
+        "status": "pending",
+        "department": "General",
+        "citizen": "6aafd5e0ea22437edd860d9a",
+        "assignedTo": null,
+        "location": {
+          "address": "usahauihfj",
+          "city": "befufheu",
+          "state": "hbuweh",
+          "pincode": "hfebue",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered",
+            "updatedBy": "6aafd5e0ea22437edd860d9a",
+            "updatedAt": "2026-10-07T09:03:46.800Z",
+            "_id": "6ac60af203688db30a08fefa"
+          }
+        ],
+        "deadline": "2026-10-09T09:03:46.800Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "createdAt": "2026-10-07T09:03:46.822Z",
+        "updatedAt": "2026-10-07T09:03:46.822Z",
+        "__v": 0
+      },
+      {
+        "_id": "6acb42db4be8b29cbb17e295",
+        "complaintId": "JV20260003",
+        "title": "nbhkjkjhgtfuuec dughue",
+        "description": "chbjkncej jncuaodudf uhwi",
+        "category": "roads",
+        "priority": "low",
+        "status": "pending",
+        "department": "General",
+        "citizen": "6aafd5e0ea22437edd860d9a",
+        "assignedTo": null,
+        "location": {
+          "address": "gyuu8ui",
+          "city": "uhiihgd",
+          "state": "ghuioik",
+          "pincode": "jhgvfy",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered",
+            "updatedBy": "6aafd5e0ea22437edd860d9a",
+            "updatedAt": "2026-10-11T08:03:39.310Z",
+            "_id": "6acb42db4be8b29cbb17e296"
+          }
+        ],
+        "deadline": "2026-10-13T08:03:39.280Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "createdAt": "2026-10-11T08:03:39.319Z",
+        "updatedAt": "2026-10-11T08:03:39.319Z",
+        "__v": 0
+      },
+      {
+        "_id": "6accab3b6dd2c345a47b005c",
+        "complaintId": "JV20260004",
+        "title": "GYUWS*nwijwidnw",
+        "description": "bhxuhwdimjiw idj0widojo",
+        "category": "roads",
+        "priority": "low",
+        "status": "pending",
+        "department": "General",
+        "citizen": "6aafd5e0ea22437edd860d9a",
+        "assignedTo": null,
+        "location": {
+          "address": "xn iijwijbij",
+          "city": "joxxjwbni",
+          "state": "nkniwjo",
+          "pincode": "nkwjow",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered",
+            "updatedBy": "6aafd5e0ea22437edd860d9a",
+            "updatedAt": "2026-10-12T09:41:15.331Z",
+            "_id": "6accab3b6dd2c345a47b005d"
+          }
+        ],
+        "deadline": "2026-10-14T09:41:15.330Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "createdAt": "2026-10-12T09:41:15.343Z",
+        "updatedAt": "2026-10-12T09:41:15.343Z",
+        "__v": 0
+      },
+      {
+        "_id": "6accac6b6dd2c345a47b00b7",
+        "complaintId": "JV20260005",
+        "title": "mnnijreogkernbrei",
+        "description": "nchu9e iesj9efjis ggeiwjf9w94g",
+        "category": "roads",
+        "priority": "normal",
+        "status": "pending",
+        "department": "General",
+        "citizen": "6aafd5e0ea22437edd860d9a",
+        "assignedTo": null,
+        "location": {
+          "address": "cjiewjfriehr",
+          "city": "jw9ejeroh",
+          "state": "jhijeri",
+          "pincode": "ndijre",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [
+          {
+            "url": "https://res.cloudinary.com/gajuhxwp/image/upload/v1791798363/janvoice/evidence/1791798359963-deepseek_mermaid_20261005_5a72bf.png.png",
+            "publicId": "janvoice/evidence/1791798359963-deepseek_mermaid_20261005_5a72bf.png",
+            "type": "image",
+            "_id": "6accac6b6dd2c345a47b00b8",
+            "uploadedAt": "2026-10-12T09:46:19.880Z"
+          }
+        ],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered",
+            "updatedBy": "6aafd5e0ea22437edd860d9a",
+            "updatedAt": "2026-10-12T09:46:19.876Z",
+            "_id": "6accac6b6dd2c345a47b00b9"
+          }
+        ],
+        "deadline": "2026-10-13T09:46:19.876Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "createdAt": "2026-10-12T09:46:19.886Z",
+        "updatedAt": "2026-10-12T09:46:19.886Z",
+        "__v": 0
+      },
+      {
+        "_id": "6accae4b6dd2c345a47b0138",
+        "complaintId": "JV20260006",
+        "title": "jhwidjiejfijefiojei jhiejeij",
+        "description": "dckmei cenejioe eniewjioe jcnoiej",
+        "category": "roads",
+        "priority": "normal",
+        "status": "resolved",
+        "department": "General",
+        "citizen": "6aafd5e0ea22437edd860d9a",
+        "assignedTo": "6adf2a2398205668a3fc82ec",
+        "location": {
+          "address": "neijerij",
+          "city": "njcnewei",
+          "state": "neijrpij",
+          "pincode": "njeije",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [
+          {
+            "url": "https://res.cloudinary.com/gajuhxwp/video/upload/v1791798851/janvoice/evidence/1791798845471-Screen_Recording_2026-09-19_133824.mp4.mp4",
+            "publicId": "janvoice/evidence/1791798845471-Screen_Recording_2026-09-19_133824.mp4",
+            "type": "video",
+            "_id": "6accae4b6dd2c345a47b0139",
+            "uploadedAt": "2026-10-12T09:54:19.392Z"
+          }
+        ],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered",
+            "updatedBy": "6aafd5e0ea22437edd860d9a",
+            "updatedAt": "2026-10-12T09:54:19.388Z",
+            "_id": "6accae4b6dd2c345a47b013a"
+          },
+          {
+            "status": "assigned",
+            "note": "Case assigned to officer",
+            "updatedBy": "6adf2b1698205668a3fc8301",
+            "updatedAt": "2026-10-26T12:28:19.525Z",
+            "_id": "6adf476370212f4b4771741c"
+          },
+          {
+            "status": "resolved",
+            "note": "Officer submitted a formal resolution report.",
+            "updatedBy": "6adf2a2398205668a3fc82ec",
+            "updatedAt": "2026-10-26T12:29:47.082Z",
+            "_id": "6adf47bb70212f4b47717485"
+          }
+        ],
+        "deadline": "2026-10-13T09:54:19.388Z",
+        "resolvedAt": "2026-10-26T12:29:47.082Z",
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "createdAt": "2026-10-12T09:54:19.399Z",
+        "updatedAt": "2026-10-26T12:29:47.084Z",
+        "__v": 2,
+        "assignedAt": "2026-10-26T12:28:19.525Z",
+        "assignedBy": "6adf2b1698205668a3fc8301",
+        "notes": []
+      },
+      {
+        "_id": "6ad702b931671dcd1d7a0ef1",
+        "complaintId": "JV20260007",
+        "title": "Bag is missing",
+        "description": "I ahiasw ashiwjoa sxanijwd bawjowad jaw",
+        "category": "roads",
+        "priority": "low",
+        "status": "resolved",
+        "department": "Public Works",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "assignedTo": "6aafd718ea22437edd860da7",
+        "location": {
+          "address": "Raja",
+          "city": "Rani",
+          "state": "Castle",
+          "pincode": "123456",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered and routed to Public Works department",
+            "updatedBy": "6accbcac6dd2c345a47b0419",
+            "updatedAt": "2026-10-20T05:57:13.654Z",
+            "_id": "6ad702b931671dcd1d7a0ef2"
+          },
+          {
+            "status": "assigned",
+            "note": "Case assigned to officer",
+            "updatedBy": "6acdbbc1a3dbceb645c994ea",
+            "updatedAt": "2026-10-20T05:59:27.081Z",
+            "_id": "6ad7033f31671dcd1d7a0f48"
+          },
+          {
+            "status": "investigating",
+            "note": "Status updated to investigating",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:19:10.310Z",
+            "_id": "6ad707de31671dcd1d7a1172"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: Bag is founded. hbija wjhijwjhwijw\nACTION TAKEN: njushijwj niejioefjse jnijefjefje jnoefjoejf\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:26:37.489Z",
+            "_id": "6ad7099d31671dcd1d7a13af"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: Hjhkiejd djahhijdjnw janijwdnwdj\nACTION TAKEN: hbbudhuhdnj n jnwijeje jheijene  jhije\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:35:08.466Z",
+            "_id": "6ad70b9c31671dcd1d7a16f9"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: Guhuhaudbb bueshjejie jijiajjnef\nACTION TAKEN: njndeijsef jnenjesfijeijse jkniajeiej\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:46:29.633Z",
+            "_id": "6ad70e45e78a995b6adef0fb"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: BYSujbanbwdjaijwa jhidajief jwdiajijakjek\nACTION TAKEN: bwsdhijefiof weneiojefijef jndeijeiifk\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:47:34.656Z",
+            "_id": "6ad70e86e78a995b6adef1e5"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: hsuhiscsjaie c echhiejije ebijdijei\nACTION TAKEN: udjhioejiojef ehiejejiejjkne jeije\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:52:51.389Z",
+            "_id": "6ad70fc37a5c35df57206659"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: nkdcjosekfpklef mneokoekfek fn\nACTION TAKEN: njsieffjoef jefniejfokwwefuiefbefj jehfijojef\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:55:34.210Z",
+            "_id": "6ad71066c6d14b07756c402e"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: huhoi jierfrjiwf efjwijwefjwjkeer\nACTION TAKEN: bjhijie whijwdkwdj9wef fjujhefioefjkwnj\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T06:56:54.485Z",
+            "_id": "6ad710b61c7071b272d975f6"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: bnuhijfijsifjfhifeieiehfkss jbisf \nACTION TAKEN: jeifhjiehihei fbnnwiefhiwef effniehhiwe nifhi\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: NO",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-20T07:01:29.449Z",
+            "_id": "6ad711c90e2b780d9baccd48"
+          },
+          {
+            "status": "resolved",
+            "note": "RESOLUTION SUMMARY: huahichcshj jwhihijw jwhidjsjkjsd\nACTION TAKEN: hijeisjisd dihjodjs jhisjijd dshijsokslj\n\n\nFOLLOW-UP: Not required\nCITIZEN SATISFACTION: YES",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-26T04:24:13.082Z",
+            "_id": "6aded5edbaccc82981140313"
+          },
+          {
+            "status": "resolved",
+            "note": "Officer submitted a formal resolution report.",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-26T04:28:48.976Z",
+            "_id": "6aded7009b1548b1e90caba0"
+          }
+        ],
+        "deadline": "2026-10-22T05:57:13.654Z",
+        "resolvedAt": "2026-10-26T04:28:48.976Z",
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [
+          {
+            "url": "https://res.cloudinary.com/gajuhxwp/image/upload/v1792477105/janvoice/evidence/1792477101477-WhatsApp_Image_2026-09-08_at_12.27.24_PM__1_.jpeg.jpg",
+            "publicId": "janvoice/evidence/1792477101477-WhatsApp_Image_2026-09-08_at_12.27.24_PM__1_.jpeg",
+            "type": "image",
+            "note": "progress evidence",
+            "uploadedAt": "2026-10-20T06:18:26.071Z",
+            "uploadedBy": "6aafd718ea22437edd860da7",
+            "_id": "6ad707b231671dcd1d7a113b"
+          }
+        ],
+        "notes": [],
+        "createdAt": "2026-10-20T05:57:13.667Z",
+        "updatedAt": "2026-10-26T04:57:50.595Z",
+        "__v": 13,
+        "assignedAt": "2026-10-20T05:59:27.081Z",
+        "assignedBy": "6acdbbc1a3dbceb645c994ea",
+        "feedback": {
+          "rating": 5,
+          "comment": "",
+          "submittedAt": "2026-10-26T04:57:50.577Z"
+        }
+      },
+      {
+        "_id": "6ad7047431671dcd1d7a0fee",
+        "complaintId": "JV20260008",
+        "title": "Deepak ate Muthaiya's food",
+        "description": "hbuhweoie weufhoweiegoe jhwie",
+        "category": "roads",
+        "priority": "normal",
+        "status": "resolved",
+        "department": "Public Works",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "assignedTo": "6aafd718ea22437edd860da7",
+        "location": {
+          "address": "hcuwogedgi",
+          "city": "jehuehi",
+          "state": "bujcer",
+          "pincode": "543456",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [
+          {
+            "url": "https://res.cloudinary.com/gajuhxwp/image/upload/v1792476267/janvoice/evidence/1792476263635-WhatsApp_Image_2026-09-08_at_11.51.44_AM.jpeg.jpg",
+            "publicId": "janvoice/evidence/1792476263635-WhatsApp_Image_2026-09-08_at_11.51.44_AM.jpeg",
+            "type": "image",
+            "_id": "6ad7047431671dcd1d7a0fef",
+            "uploadedAt": "2026-10-20T06:04:36.124Z"
+          }
+        ],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered and routed to Public Works department",
+            "updatedBy": "6accbcac6dd2c345a47b0419",
+            "updatedAt": "2026-10-20T06:04:36.122Z",
+            "_id": "6ad7047431671dcd1d7a0ff0"
+          },
+          {
+            "status": "assigned",
+            "note": "Case assigned to officer",
+            "updatedBy": "6acdbbc1a3dbceb645c994ea",
+            "updatedAt": "2026-10-26T05:11:44.816Z",
+            "_id": "6adee110841abe1356e9dfc8"
+          },
+          {
+            "status": "reassign-requested",
+            "note": "Reassignment requested: [CONFLICT] bgfthfj gdgtjg hjyi gdtjjui drfgtty",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-26T05:19:30.642Z",
+            "_id": "6adee2e2841abe1356e9e09a"
+          },
+          {
+            "status": "escalated",
+            "note": "ESCALATION REQUEST\nCategory: AUTHORITY\nUrgency: HIGH\nReason: jsjodio cchidjj bidjisdjfidjvsd dschidjidsvj",
+            "updatedBy": "6aafd718ea22437edd860da7",
+            "updatedAt": "2026-10-26T05:38:01.683Z",
+            "_id": "6adee739596e2427d350532f"
+          },
+          {
+            "status": "escalated",
+            "note": "Escalated: bghuahoj sbajskjsjkass sxbjasxasjkas",
+            "updatedBy": "6acdbbc1a3dbceb645c994ea",
+            "updatedAt": "2026-10-26T05:55:27.693Z",
+            "_id": "6adeeb4f3b667384045c4dd3"
+          },
+          {
+            "status": "resolved",
+            "note": "Case reviewed and resolved by Higher Authority.",
+            "updatedBy": "6acdb5d8a3dbceb645c9948a",
+            "updatedAt": "2026-10-26T08:24:53.336Z",
+            "_id": "6adf0e5598205668a3fc8093"
+          }
+        ],
+        "deadline": "2026-10-21T06:04:36.122Z",
+        "resolvedAt": "2026-10-26T08:24:53.336Z",
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "notes": [],
+        "createdAt": "2026-10-20T06:04:36.130Z",
+        "updatedAt": "2026-10-26T08:24:53.351Z",
+        "__v": 5,
+        "assignedAt": "2026-10-26T05:11:44.816Z",
+        "assignedBy": "6acdbbc1a3dbceb645c994ea",
+        "escalatedAt": "2026-10-26T05:55:27.693Z"
+      },
+      {
+        "_id": "6aded91e9b1548b1e90caff9",
+        "complaintId": "JV20260009",
+        "title": "Sitharth is talking bad words",
+        "description": "nkjd sdnijsdkl snkdksd ajdkjoefkef jije",
+        "category": "water",
+        "priority": "normal",
+        "status": "pending",
+        "department": "Water Supply",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "assignedTo": null,
+        "location": {
+          "address": "njhijiewji",
+          "city": "KJEHEFIEJ",
+          "state": "HIFIEJ",
+          "pincode": "IHJEIE",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 2,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered and routed to Water Supply department",
+            "updatedBy": "6accbcac6dd2c345a47b0419",
+            "updatedAt": "2026-10-26T04:37:50.866Z",
+            "_id": "6aded91e9b1548b1e90caffa"
+          }
+        ],
+        "deadline": "2026-10-27T04:37:50.866Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "notes": [],
+        "createdAt": "2026-10-26T04:37:50.873Z",
+        "updatedAt": "2026-10-26T04:37:50.873Z",
+        "__v": 0
+      },
+      {
+        "_id": "6aded98c9b1548b1e90cafff",
+        "complaintId": "JV20260010",
+        "title": "Deepak OOSE hour la thooongitta",
+        "description": "bjkdhoiaja djiadjdj jsnjscjksaj jnasijasiji",
+        "category": "sanitation",
+        "priority": "low",
+        "status": "pending",
+        "department": "Sanitation",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "assignedTo": null,
+        "location": {
+          "address": "sjhij sjniassj",
+          "city": "jidjsj",
+          "state": "ndjd",
+          "pincode": "ncjlfk",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 2,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered and routed to Sanitation department",
+            "updatedBy": "6accbcac6dd2c345a47b0419",
+            "updatedAt": "2026-10-26T04:39:40.487Z",
+            "_id": "6aded98c9b1548b1e90cb000"
+          }
+        ],
+        "deadline": "2026-10-28T04:39:40.487Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "notes": [],
+        "createdAt": "2026-10-26T04:39:40.490Z",
+        "updatedAt": "2026-10-26T04:39:40.490Z",
+        "__v": 0
+      },
+      {
+        "_id": "6aded9fb9b1548b1e90cb005",
+        "complaintId": "JV20260011",
+        "title": "Japhney food_a waste pannitta",
+        "description": "bsdjjidodjewewdiw jshdsijdopwjdoe",
+        "category": "electricity",
+        "priority": "normal",
+        "status": "pending",
+        "department": "Electricity",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "assignedTo": null,
+        "location": {
+          "address": "jioioef jiwiowdiwd",
+          "city": "hjhjicjor",
+          "state": "jeijdv",
+          "pincode": "jdpjro",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 1,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered and routed to Electricity department",
+            "updatedBy": "6accbcac6dd2c345a47b0419",
+            "updatedAt": "2026-10-26T04:41:31.021Z",
+            "_id": "6aded9fb9b1548b1e90cb006"
+          }
+        ],
+        "deadline": "2026-10-27T04:41:31.021Z",
+        "resolvedAt": null,
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "notes": [],
+        "createdAt": "2026-10-26T04:41:31.023Z",
+        "updatedAt": "2026-10-26T04:41:31.023Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf416a8a80f4417673ba2c",
+        "complaintId": "JV20260012",
+        "title": "🚨 EMERGENCY: Accident",
+        "description": "EMERGENCY TYPE: ACCIDENT\n\nBus accident",
+        "category": "other",
+        "priority": "emergency",
+        "status": "resolved",
+        "department": "General",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "assignedTo": "6adf2af898205668a3fc82fa",
+        "location": {
+          "address": "Medavakkam",
+          "city": "Chennai",
+          "state": "Tamil Nadu",
+          "pincode": "600001",
+          "coordinates": {
+            "lat": null,
+            "lng": null
+          }
+        },
+        "affectedPeople": 10,
+        "evidence": [],
+        "statusHistory": [
+          {
+            "status": "pending",
+            "note": "Complaint registered and routed to General department",
+            "updatedBy": "6accbcac6dd2c345a47b0419",
+            "updatedAt": "2026-10-26T12:02:50.795Z",
+            "_id": "6adf416a8a80f4417673ba2d"
+          },
+          {
+            "status": "assigned",
+            "note": "Case assigned to officer",
+            "updatedBy": "6adf2b1698205668a3fc8301",
+            "updatedAt": "2026-10-26T12:09:11.320Z",
+            "_id": "6adf42e78a80f4417673bde8"
+          },
+          {
+            "status": "resolved",
+            "note": "Status updated to resolved",
+            "updatedBy": "6adf2af898205668a3fc82fa",
+            "updatedAt": "2026-10-26T12:12:33.557Z",
+            "_id": "6adf43b18a80f4417673be9f"
+          }
+        ],
+        "deadline": "2026-10-26T13:02:50.795Z",
+        "resolvedAt": "2026-10-26T12:12:33.557Z",
+        "escalatedTo": null,
+        "alerts": {
+          "deadlineWarned": false,
+          "autoEscalated": false
+        },
+        "statusNotified": false,
+        "actionEvidence": [],
+        "notes": [],
+        "createdAt": "2026-10-26T12:02:50.809Z",
+        "updatedAt": "2026-10-26T13:23:01.497Z",
+        "__v": 2,
+        "assignedAt": "2026-10-26T12:09:11.319Z",
+        "assignedBy": "6adf2b1698205668a3fc8301",
+        "feedback": {
+          "rating": 5,
+          "comment": "",
+          "submittedAt": "2026-10-26T13:23:01.491Z"
+        }
+      }
+    ],
+    "notifications": [
+      {
+        "_id": "6adf47bb70212f4b47717488",
+        "user": "6acdbbc1a3dbceb645c994ea",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b47717489",
+        "user": "6adf267498205668a3fc829f",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b4771748a",
+        "user": "6adf272598205668a3fc82ad",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b4771748b",
+        "user": "6adf27c398205668a3fc82bb",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b4771748c",
+        "user": "6adf285e98205668a3fc82c9",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b4771748d",
+        "user": "6adf290098205668a3fc82d7",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b4771748e",
+        "user": "6adf295e98205668a3fc82e5",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b4771748f",
+        "user": "6adf2a4998205668a3fc82f3",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b47717490",
+        "user": "6adf2b1698205668a3fc8301",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b47717491",
+        "user": "6acdb5d8a3dbceb645c9948a",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.399Z",
+        "updatedAt": "2026-10-26T12:29:47.399Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b47717492",
+        "user": "6adf2b9498205668a3fc8308",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.400Z",
+        "updatedAt": "2026-10-26T12:29:47.400Z"
+      },
+      {
+        "_id": "6adf47bb70212f4b47717493",
+        "user": "6acd0cbd860863741904b1e5",
+        "type": "success",
+        "category": "complaint",
+        "title": "📄 New Resolution Report",
+        "message": "Report submitted for JV20260006 by Japhney.",
+        "link": "/admin/reports",
+        "icon": null,
+        "read": false,
+        "relatedId": "6adf47ba70212f4b47717483",
+        "relatedModel": "Complaint",
+        "emailQueued": false,
+        "emailSent": false,
+        "emailFailed": false,
+        "emailAttempts": 0,
+        "__v": 0,
+        "createdAt": "2026-10-26T12:29:47.400Z",
+        "updatedAt": "2026-10-26T12:29:47.400Z"
+      }
+    ],
+    "auditlogs": [
+      {
+        "_id": "6adf52ecda65efe281995658",
+        "action": "SYSTEM_TEST",
+        "category": "system",
+        "severity": "info",
+        "description": "Manual test log to verify UI",
+        "user": "66bb1e8e18b8c99f3ec485d5",
+        "ip": "127.0.0.1",
+        "createdAt": "2026-10-26T10:00:00.000Z",
+        "updatedAt": "2026-10-26T10:00:00.000Z"
+      },
+      {
+        "_id": "6adf54204d7b4d496a50d0cf",
+        "user": "6accbcac6dd2c345a47b0419",
+        "action": "LOGIN",
+        "category": "auth",
+        "severity": "info",
+        "description": "User logged in as citizen",
+        "targetUser": null,
+        "targetId": null,
+        "ip": "::1",
+        "createdAt": "2026-10-26T13:22:40.246Z",
+        "updatedAt": "2026-10-26T13:22:40.246Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf5528c01bd1421f8951e0",
+        "user": "6acd0cbd860863741904b1e5",
+        "action": "LOGIN",
+        "category": "auth",
+        "severity": "info",
+        "description": "User logged in as system_admin",
+        "targetUser": null,
+        "targetId": null,
+        "ip": "::1",
+        "createdAt": "2026-10-26T13:27:04.125Z",
+        "updatedAt": "2026-10-26T13:27:04.125Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf5646a06252bc6a79f4ed",
+        "user": "6acd0cbd860863741904b1e5",
+        "action": "LOGIN",
+        "category": "auth",
+        "severity": "info",
+        "description": "User logged in as system_admin",
+        "targetUser": null,
+        "targetId": null,
+        "ip": "::1",
+        "createdAt": "2026-10-26T13:31:50.665Z",
+        "updatedAt": "2026-10-26T13:31:50.665Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf572d54e1b8104c3ca969",
+        "user": "6accbcac6dd2c345a47b0419",
+        "action": "LOGIN",
+        "category": "auth",
+        "severity": "success",
+        "description": "User logged in as citizen",
+        "targetUser": null,
+        "targetId": null,
+        "ip": "::1",
+        "createdAt": "2026-10-26T13:35:41.071Z",
+        "updatedAt": "2026-10-26T13:35:41.071Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf574854e1b8104c3ca9bb",
+        "user": "6acd0cbd860863741904b1e5",
+        "action": "LOGIN",
+        "category": "auth",
+        "severity": "success",
+        "description": "User logged in as system_admin",
+        "targetUser": null,
+        "targetId": null,
+        "ip": "::1",
+        "createdAt": "2026-10-26T13:36:08.489Z",
+        "updatedAt": "2026-10-26T13:36:08.489Z",
+        "__v": 0
+      }
+    ],
+    "feedbacks": [
+      {
+        "_id": "6adeddce04e8e200a797e46d",
+        "complaint": "6ad702b931671dcd1d7a0ef1",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "officer": "6aafd718ea22437edd860da7",
+        "department": "Public Works",
+        "rating": 5,
+        "comment": "",
+        "tags": [
+          "Helpful Officer",
+          "Fast Resolution"
+        ],
+        "wouldRecommend": null,
+        "isAnonymous": false,
+        "createdAt": "2026-10-26T04:57:50.768Z",
+        "updatedAt": "2026-10-26T04:57:50.768Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf54354d7b4d496a50d194",
+        "complaint": "6adf416a8a80f4417673ba2c",
+        "citizen": "6accbcac6dd2c345a47b0419",
+        "officer": "6adf2af898205668a3fc82fa",
+        "department": "General",
+        "rating": 5,
+        "comment": "",
+        "tags": [
+          "Professional",
+          "Clear Communication"
+        ],
+        "wouldRecommend": null,
+        "isAnonymous": false,
+        "createdAt": "2026-10-26T13:23:01.596Z",
+        "updatedAt": "2026-10-26T13:23:01.596Z",
+        "__v": 0
+      }
+    ],
+    "departments": [
+      {
+        "_id": "6acdbb69e5c74a12459d15ac",
+        "code": "PW",
+        "__v": 0,
+        "categories": [],
+        "color": "#FF6B35",
+        "createdAt": "2026-10-13T05:02:33.436Z",
+        "head": "Nisha",
+        "icon": "🛣️",
+        "isActive": true,
+        "name": "Public Works",
+        "officers": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "low": 48,
+          "normal": 24
+        },
+        "updatedAt": "2026-10-20T05:55:08.335Z",
+        "zones": [],
+        "contactEmail": "",
+        "contactPhone": ""
+      },
+      {
+        "_id": "6acdbb6ae5c74a12459d15ad",
+        "code": "WS",
+        "__v": 0,
+        "categories": [],
+        "color": "#4299E1",
+        "createdAt": "2026-10-13T05:02:34.043Z",
+        "head": "",
+        "icon": "💧",
+        "isActive": true,
+        "name": "Water Supply",
+        "officers": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "low": 48,
+          "normal": 24
+        },
+        "updatedAt": "2026-10-19T16:47:58.864Z",
+        "zones": [],
+        "contactEmail": "",
+        "contactPhone": ""
+      },
+      {
+        "_id": "6acdbb6ae5c74a12459d15ae",
+        "code": "SN",
+        "__v": 0,
+        "categories": [],
+        "color": "#38A169",
+        "createdAt": "2026-10-13T05:02:34.143Z",
+        "head": "",
+        "icon": "🗑️",
+        "isActive": true,
+        "name": "Sanitation",
+        "officers": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "low": 48,
+          "normal": 24
+        },
+        "updatedAt": "2026-10-19T16:47:48.113Z",
+        "zones": [],
+        "contactEmail": "",
+        "contactPhone": ""
+      },
+      {
+        "_id": "6acdbb6ae5c74a12459d15af",
+        "code": "EL",
+        "__v": 0,
+        "categories": [],
+        "color": "#ED8936",
+        "createdAt": "2026-10-13T05:02:34.245Z",
+        "head": "",
+        "icon": "⚡",
+        "isActive": true,
+        "name": "Electricity",
+        "officers": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "low": 48,
+          "normal": 24
+        },
+        "updatedAt": "2026-10-19T16:48:05.737Z",
+        "zones": [],
+        "contactEmail": "",
+        "contactPhone": ""
+      },
+      {
+        "_id": "6acdbb6ae5c74a12459d15b0",
+        "code": "TR",
+        "__v": 0,
+        "categories": [],
+        "color": "#805AD5",
+        "createdAt": "2026-10-13T05:02:34.348Z",
+        "head": "",
+        "icon": "🚌",
+        "isActive": true,
+        "name": "Transport",
+        "officers": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "low": 48,
+          "normal": 24
+        },
+        "updatedAt": "2026-10-19T16:48:12.486Z",
+        "zones": [],
+        "contactEmail": "",
+        "contactPhone": ""
+      },
+      {
+        "_id": "6adf391d8a80f4417673b6c7",
+        "name": "Health",
+        "code": "HW",
+        "description": "",
+        "head": null,
+        "color": "#FF6B35",
+        "icon": "🏛️",
+        "officers": [],
+        "categories": [],
+        "zones": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "normal": 24,
+          "low": 48
+        },
+        "isActive": true,
+        "createdAt": "2026-10-26T11:27:25.768Z",
+        "updatedAt": "2026-10-26T11:27:25.768Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf393c8a80f4417673b6cf",
+        "name": "Education",
+        "code": "ED",
+        "description": "",
+        "head": null,
+        "color": "#FF6B35",
+        "icon": "🏛️",
+        "officers": [],
+        "categories": [],
+        "zones": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "normal": 24,
+          "low": 48
+        },
+        "isActive": true,
+        "createdAt": "2026-10-26T11:27:56.783Z",
+        "updatedAt": "2026-10-26T11:27:56.783Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf396f8a80f4417673b6e6",
+        "name": "Environment",
+        "code": "EN",
+        "description": "",
+        "head": null,
+        "color": "#FF6B35",
+        "icon": "🏛️",
+        "officers": [],
+        "categories": [],
+        "zones": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "normal": 24,
+          "low": 48
+        },
+        "isActive": true,
+        "createdAt": "2026-10-26T11:28:47.066Z",
+        "updatedAt": "2026-10-26T11:28:47.066Z",
+        "__v": 0
+      },
+      {
+        "_id": "6adf39818a80f4417673b6ee",
+        "name": "General",
+        "code": "GN",
+        "description": "",
+        "head": null,
+        "color": "#FF6B35",
+        "icon": "🏛️",
+        "officers": [],
+        "categories": [],
+        "zones": [],
+        "slaTargets": {
+          "emergency": 1,
+          "high": 4,
+          "normal": 24,
+          "low": 48
+        },
+        "isActive": true,
+        "createdAt": "2026-10-26T11:29:05.908Z",
+        "updatedAt": "2026-10-26T11:29:05.908Z",
+        "__v": 0
+      }
+    ],
+    "categories": [],
+    "escalations": []
+  }
+}

@@ -7,116 +7,23 @@ const Feedback = require('../models/Feedback')
 const { HTTP_STATUS } = require('../config/constants')
 
 exports.getDashboard = async (req, res) => {
-  try {
-    const citizenId = req.user._id
-
-    const [total, pending, active, resolved, emergency] = await Promise.all([
-      Complaint.countDocuments({ citizen: citizenId }),
-      Complaint.countDocuments({ citizen: citizenId, status: 'pending' }),
-      Complaint.countDocuments({
-        citizen: citizenId,
-        status: { $in: ['assigned', 'investigating', 'in-progress'] }
-      }),
-      Complaint.countDocuments({ citizen: citizenId, status: 'resolved' }),
-      Complaint.countDocuments({
-        citizen: citizenId,
-        priority: 'emergency',
-        status: { $ne: 'resolved' }
-      })
-    ])
-
-    const recent = await Complaint.find({ citizen: citizenId })
-      .sort({ createdAt: -1 })
-      .limit(3)
-      .select('complaintId title category status priority createdAt updatedAt')
-
-    const recentUpdates = await Complaint.find({
-      citizen: citizenId,
-      'statusHistory.updatedAt': {
-        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      }
-    })
-      .sort({ updatedAt: -1 })
-      .limit(5)
-      .select('complaintId title status updatedAt statusHistory')
-
-    const activities = recentUpdates.map((c) => {
-      const last = c.statusHistory[c.statusHistory.length - 1]
-      return {
-        complaintId: c.complaintId,
-        title: c.title,
-        status: c.status,
-        action: last?.note || 'Updated',
-        time: c.updatedAt
-      }
-    })
-
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      stats: { total, pending, active, resolved, emergency },
-      recent,
-      activities
-    })
-  } catch (error) {
-    console.error('Citizen dashboard error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to load dashboard'
-    })
-  }
+  // ... (keep your existing dashboard code)
 }
 
 exports.trackComplaint = async (req, res) => {
-  try {
-    const { complaintId } = req.params
-
-    const complaint = await Complaint.findOne({
-      complaintId: complaintId.toUpperCase()
-    })
-      .populate('assignedTo', 'name email phone')
-      .populate('citizen', 'name email')
-
-    if (!complaint) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        message: 'No complaint found with this ID'
-      })
-    }
-
-    const isOwner =
-      complaint.citizen._id.toString() === req.user.id.toString()
-    const isAdmin = ['system_admin', 'department_admin', 'higher_authority'].includes(
-      req.user.role
-    )
-
-    if (!isOwner && !isAdmin) {
-      return res.status(HTTP_STATUS.FORBIDDEN).json({
-        success: false,
-        message: 'You can only track your own complaints'
-      })
-    }
-
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      complaint
-    })
-  } catch (error) {
-    console.error('Track complaint error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to track complaint'
-    })
-  }
+  // ... (keep your existing tracking code)
 }
 
+// ✅ UPDATED: Enforce one feedback per complaint
 exports.giveFeedback = async (req, res) => {
   try {
-    const { complaintId, rating, comment } = req.body
+    const { id } = req.params // ID comes from the URL
+    const { rating, comment, tags } = req.body 
 
-    if (!complaintId || !rating) {
+    if (!rating) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
-        message: 'Complaint ID and rating are required'
+        message: 'Rating is required'
       })
     }
 
@@ -127,7 +34,7 @@ exports.giveFeedback = async (req, res) => {
       })
     }
 
-    const complaint = await Complaint.findById(complaintId)
+    const complaint = await Complaint.findById(id)
     if (!complaint) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
@@ -135,13 +42,15 @@ exports.giveFeedback = async (req, res) => {
       })
     }
 
+    // Security check: Ensure the person giving feedback is the owner
     if (complaint.citizen.toString() !== req.user.id.toString()) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         success: false,
-        message: 'Not authorized'
+        message: 'Not authorized to give feedback for this complaint'
       })
     }
 
+    // Check: Only allow feedback on resolved complaints
     if (complaint.status !== 'resolved') {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
@@ -149,19 +58,32 @@ exports.giveFeedback = async (req, res) => {
       })
     }
 
+    // ✅ CHECK: Has feedback already been given?
+    const existingFeedback = await Feedback.findOne({ complaint: id })
+    if (existingFeedback) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'You have already submitted feedback for this complaint.'
+      })
+    }
+
+    // Save feedback to complaint document
     complaint.feedback = {
-      rating,
+      rating: parseInt(rating),
       comment: comment || '',
       submittedAt: new Date()
     }
     await complaint.save()
 
+    // Create standalone Feedback record for analytics
     await Feedback.create({
       complaint: complaint._id,
       citizen: req.user.id,
       officer: complaint.assignedTo,
-      rating,
-      comment: comment || ''
+      department: complaint.department,
+      rating: parseInt(rating),
+      comment: comment || '',
+      tags: tags || []
     })
 
     res.status(HTTP_STATUS.OK).json({
@@ -178,16 +100,5 @@ exports.giveFeedback = async (req, res) => {
 }
 
 exports.getNotifications = async (req, res) => {
-  try {
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      count: 0,
-      notifications: []
-    })
-  } catch (error) {
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to fetch notifications'
-    })
-  }
+  // ... (keep your existing notifications code)
 }

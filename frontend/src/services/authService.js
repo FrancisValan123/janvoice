@@ -2,7 +2,7 @@ import { api } from './api'
 
 export const authService = {
   // POST /api/auth/register
-  // Expects: { name, email, password, phone, role }
+  // Expects: { name, email, password, phone }
   register: async (userData) => {
     const response = await api.post('/auth/register', userData)
     if (response.data.token) {
@@ -17,7 +17,9 @@ export const authService = {
   login: async (credentials) => {
     const response = await api.post('/auth/login', {
       email: credentials.email,
-      password: credentials.password
+      password: credentials.password,
+      // ✅ FIXED: Send the selected role to the backend for validation
+      role: credentials.role 
     })
     if (response.data.token) {
       localStorage.setItem('janvoice_token', response.data.token)

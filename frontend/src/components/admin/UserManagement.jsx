@@ -59,7 +59,6 @@ const UserManagement = () => {
     department: ''
   })
 
-  // ✅ NEW: State for tracking dept updates
   const [updatingDept, setUpdatingDept] = useState(null)
 
   const creatableRoles = CAN_CREATE[user?.role] || []
@@ -71,7 +70,7 @@ const UserManagement = () => {
     try {
       setLoading(true)
       setError('')
-      const res = await api.get('/admin/users')
+      const res = await api.get('/admin/users?limit=1000')
       setUsers(res.data?.users || [])
     } catch (err) {
       console.error('Fetch users error:', err)
@@ -157,13 +156,13 @@ const UserManagement = () => {
   }
 
   // ===================================
-  // ✅ NEW: UPDATE USER DEPARTMENT
+  // UPDATE USER DEPARTMENT
   // ===================================
   const handleUpdateDepartment = async (userId, newDept) => {
     try {
       setUpdatingDept(userId)
       await api.patch(`/admin/users/${userId}/department`, { department: newDept })
-      await fetchUsers() // Refresh the list
+      await fetchUsers() 
     } catch (err) {
       console.error('Update department error:', err)
       alert(err.response?.data?.message || 'Failed to update department')
@@ -322,7 +321,7 @@ const UserManagement = () => {
                 <tr>
                   <th>User</th>
                   <th>Role</th>
-                  <th>Department</th> {/* ✅ NEW COLUMN */}
+                  <th>Department</th>
                   <th>Phone</th>
                   <th>Status</th>
                   <th>Joined</th>
@@ -353,7 +352,6 @@ const UserManagement = () => {
                         </span>
                       </td>
                       
-                      {/* ✅ NEW: DEPARTMENT DROPDOWN */}
                       <td>
                         {needsDept ? (
                           <select
@@ -393,13 +391,16 @@ const UserManagement = () => {
                       <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
                       <td>
                         <div className="action-buttons">
-                          <button
-                            className="icon-action"
-                            onClick={() => handleResetPassword(u)}
-                            title="Reset password"
-                          >
-                            🔑
-                          </button>
+                          {/* ✅ FIXED: Only show Reset Password for non-citizens */}
+                          {u.role !== 'citizen' && (
+                            <button
+                              className="icon-action"
+                              onClick={() => handleResetPassword(u)}
+                              title="Reset password"
+                            >
+                              🔑
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

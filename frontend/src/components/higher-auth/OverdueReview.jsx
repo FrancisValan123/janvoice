@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom' // ✅ 1. Import useNavigate
 import DashboardLayout from '../common/DashboardLayout'
 import { api } from '../../services/api'
 
 const OverdueReview = () => {
+  const navigate = useNavigate() // ✅ 2. Initialize navigate
+
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/authority/dashboard' },
     { icon: '🚨', label: 'Escalated Cases', path: '/authority/escalated' },
@@ -18,9 +21,6 @@ const OverdueReview = () => {
   const [loading, setLoading] = useState(true)
   const [rangeFilter, setRangeFilter] = useState('all')
 
-  // ===================================
-  // FETCH REAL DATA
-  // ===================================
   useEffect(() => {
     const fetchOverdue = async () => {
       try {
@@ -52,7 +52,6 @@ const OverdueReview = () => {
     return { label: 'Warning', color: '#ED8936', bg: '#FEEBC8' }
   }
 
-  // Filter based on days overdue
   let filtered = overdueCases
   if (rangeFilter === 'critical') filtered = overdueCases.filter((c) => (c.daysOverdue || 0) >= 14)
   else if (rangeFilter === 'severe') filtered = overdueCases.filter((c) => (c.daysOverdue || 0) >= 7 && (c.daysOverdue || 0) < 14)
@@ -81,7 +80,7 @@ const OverdueReview = () => {
     <DashboardLayout role="higher_authority" menuItems={menuItems} title="Overdue Review">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* ✅ Header Banner - Fixed white text */}
+        {/* Header Banner */}
         <div style={{ background: 'linear-gradient(135deg, #9C4221, #C05621)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', boxShadow: '0 12px 32px rgba(156, 66, 33, 0.25)' }}>
           <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
             ⏰ Overdue Cases Review
@@ -184,7 +183,11 @@ const OverdueReview = () => {
                       </td>
                       <td style={{ padding: '14px', fontSize: '12px', color: 'var(--text-secondary)' }}>👥 {c.affectedPeople || 1}</td>
                       <td style={{ padding: '14px' }}>
-                        <button style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #C05621, #9C4221)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        {/* ✅ 3. Added onClick handler to navigate to details page */}
+                        <button 
+                          onClick={() => navigate(`/authority/complaints/${c._id}`)}
+                          style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #C05621, #9C4221)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
                           Take Action
                         </button>
                       </td>

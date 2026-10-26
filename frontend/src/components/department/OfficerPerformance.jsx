@@ -18,31 +18,72 @@ const OfficerPerformance = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   
-  const [sortBy, setSortBy] = useState('name')
+  // ✅ CHANGED: Default sort by SLA (best first) instead of Name
+  const [sortBy, setSortBy] = useState('sla')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    const fetchOfficers = async () => {
+    const fetchOfficersAndStats = async () => {
       try {
         setLoading(true)
-        // Fetch real officers from database
-        const res = await api.get('/admin/users?role=officer')
-        const data = res.data?.users || []
         
-        // Map real officers to our UI structure
-        const mappedOfficers = data.map(o => ({
-          id: o._id,
-          name: o.name,
-          email: o.email,
-          dept: o.department || 'Unassigned',
-          zone: o.zone || 'General',
-          total: 0,
-          resolved: 0,
-          avgDays: 0,
-          rating: 0,
-          sla: 0,
-          status: o.isActive ? 'active' : 'inactive'
-        }))
+        // 1. Fetch officers
+        const usersRes = await api.get('/admin/users?role=officer')
+        const officersData = usersRes.data?.users || []
+
+        // 2. Fetch complaints to calculate stats
+        const complaintsRes = await api.get('/complaints?limit=1000')
+        const allComplaints = complaintsRes.data?.complaints || []
+
+        // 3. Map officers and calculate their real metrics
+        const mappedOfficers = officersData.map(o => {
+          const officerComplaints = allComplaints.filter(
+            c => c.assignedTo?._id === o._id || c.assignedTo === o._id
+          )
+          
+          const total = officerComplaints.length
+          const resolvedCases = officerComplaints.filter(c => c.status === 'resolved')
+          const resolved = resolvedCases.length
+          
+          // Calculate Average Resolution Days
+          let totalDays = 0
+          let validResolved = 0
+          resolvedCases.forEach(c => {
+            if (c.createdAt && c.resolvedAt) {
+              totalDays += (new Date(c.resolvedAt) - new Date(c.createdAt)) / (1000 * 60 * 60 * 24)
+              validResolved++
+            }
+          })
+          const avgDays = validResolved > 0 ? Math.round((totalDays / validResolved) * 10) / 10 : 0
+
+          // Calculate Average Rating (from feedback)
+          let totalRating = 0
+          let ratedCount = 0
+          resolvedCases.forEach(c => {
+            if (c.feedback && c.feedback.rating) {
+              totalRating += c.feedback.rating
+              ratedCount++
+            }
+          })
+          const rating = ratedCount > 0 ? parseFloat((totalRating / ratedCount).toFixed(1)) : 0
+
+          // Calculate SLA % (Resolved / Total)
+          const sla = total > 0 ? Math.round((resolved / total) * 100) : 0
+
+          return {
+            id: o._id,
+            name: o.name,
+            email: o.email,
+            dept: o.department || 'Unassigned',
+            zone: o.zone || 'General',
+            total,
+            resolved,
+            avgDays,
+            rating,
+            sla,
+            status: o.isActive ? 'active' : 'inactive'
+          }
+        })
 
         setOfficers(mappedOfficers)
       } catch (err) {
@@ -53,7 +94,7 @@ const OfficerPerformance = () => {
       }
     }
 
-    fetchOfficers()
+    fetchOfficersAndStats()
   }, [])
 
   const filtered = officers.filter(
@@ -63,17 +104,19 @@ const OfficerPerformance = () => {
       o.zone.toLowerCase().includes(search.toLowerCase())
   )
 
+  // ✅ UPDATED: Sorting logic to handle highest SLA first, then resolved, then rating
   const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'sla') return b.sla - a.sla || b.resolved - a.resolved
     if (sortBy === 'resolved') return b.resolved - a.resolved
     if (sortBy === 'rating') return b.rating - a.rating
-    if (sortBy === 'sla') return b.sla - a.sla
     if (sortBy === 'avgDays') return a.avgDays - b.avgDays
     return a.name.localeCompare(b.name)
   })
 
+  // Find Top Performers (Sort by rating, then resolved count, then SLA)
   const topPerformers = [...officers]
-    .filter((o) => o.status === 'active')
-    .sort((a, b) => b.rating - a.rating)
+    .filter((o) => o.status === 'active') 
+    .sort((a, b) => b.rating - a.rating || b.resolved - a.resolved || b.sla - a.sla) 
     .slice(0, 3)
 
   const getInitials = (name) => name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
@@ -81,7 +124,7 @@ const OfficerPerformance = () => {
   if (loading) {
     return (
       <DashboardLayout role="department_admin" menuItems={menuItems} title="Officer Performance">
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>⏳ Loading officers...</div>
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>⏳ Loading officers & calculating stats...</div>
       </DashboardLayout>
     )
   }
@@ -90,7 +133,7 @@ const OfficerPerformance = () => {
     <DashboardLayout role="department_admin" menuItems={menuItems} title="Officer Performance">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* Header Banner - Fixed text color to white */}
+        {/* Header Banner */}
         <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', boxShadow: '0 12px 32px rgba(45, 55, 72, 0.25)' }}>
           <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
             👨‍💼 Officer Performance
@@ -151,11 +194,11 @@ const OfficerPerformance = () => {
             <input type="text" placeholder="Search officers..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: 'var(--text-primary)' }} />
           </div>
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: '11px 16px', border: '2px solid var(--border-light)', borderRadius: '10px', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '13px', fontWeight: '600', outline: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-            <option value="name">Sort: Name</option>
+            <option value="sla">Sort: Best SLA</option>
             <option value="resolved">Sort: Most Resolved</option>
             <option value="rating">Sort: Highest Rating</option>
-            <option value="sla">Sort: Best SLA</option>
             <option value="avgDays">Sort: Fastest</option>
+            <option value="name">Sort: Name</option>
           </select>
         </div>
 

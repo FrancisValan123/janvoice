@@ -64,7 +64,7 @@ const { startReportGenerator } = require('./jobs/reportGenerator')
 const apiRoutes = require('./routes')
 const uploadRoutes = require('./routes/uploadRoutes')
 const adminRoutes = require('./routes/adminRoutes')
-const departmentRoutes = require('./routes/departmentRoutes') // ✅ Added
+const departmentRoutes = require('./routes/departmentRoutes') 
 
 // ===================================
 // LOGGER
@@ -155,7 +155,7 @@ app.get('/', (req, res) => {
 app.use('/api/admin', adminRoutes)
 
 // ===================================
-// DEPARTMENT ROUTES ✅
+// DEPARTMENT ROUTES
 // ===================================
 app.use('/api/departments', departmentRoutes)
 
@@ -166,6 +166,7 @@ app.use('/api/upload', uploadRoutes)
 
 // ===================================
 // API ROUTES
+// (This mounts routes/index.js, which includes /complaints, /auth, etc.)
 // ===================================
 app.use('/api', apiRoutes)
 

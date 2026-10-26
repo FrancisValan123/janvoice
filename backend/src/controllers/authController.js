@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs')
 const speakeasy = require('speakeasy')
 const QRCode = require('qrcode')
 const User = require('../models/User')
+const AuditLog = require('../models/AuditLog') // ✅ Added AuditLog
 const { generateAccessToken } = require('../config/jwt')
 const { sendEmail, emailTemplates } = require('../config/email')
 const { HTTP_STATUS } = require('../config/constants')
@@ -54,6 +55,16 @@ exports.register = async (req, res) => {
       role: user.role
     })
 
+    // ✅ ADD AUDIT LOG: User Registered
+    await AuditLog.create({
+      user: user._id,
+      action: 'REGISTER',
+      category: 'auth',
+      severity: 'success',
+      description: `New citizen registered: ${user.email}`,
+      ip: req.ip || req.connection.remoteAddress
+    })
+
     sendEmail({
       to: user.email,
       subject: 'Welcome to JanVoice! 🇮🇳',
@@ -70,7 +81,7 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        department: user.department, // ✅ ADDED
+        department: user.department,
         isVerified: user.isVerified,
         twoFactorEnabled: false,
         createdAt: user.createdAt
@@ -90,7 +101,7 @@ exports.register = async (req, res) => {
 // ===================================
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body
+    const { email, password, role } = req.body
 
     if (!email || !password) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -125,6 +136,14 @@ exports.login = async (req, res) => {
       })
     }
 
+    // ROLE ENFORCEMENT CHECK
+    if (role && user.role !== role) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        message: `Access denied. Your account is registered as a ${user.role.replace('_', ' ')}, not a ${role.replace('_', ' ')}. Please select the correct tab.`
+      })
+    }
+
     if (user.twoFactorEnabled) {
       return res.status(HTTP_STATUS.OK).json({
         success: true,
@@ -137,6 +156,16 @@ exports.login = async (req, res) => {
 
     user.lastLogin = new Date()
     await user.save()
+
+    // ✅ ADD AUDIT LOG: Login Success (Severity changed to 'success')
+    await AuditLog.create({
+      user: user._id,
+      action: 'LOGIN',
+      category: 'auth',
+      severity: 'success',
+      description: `User logged in as ${user.role}`,
+      ip: req.ip || req.connection.remoteAddress
+    })
 
     const token = generateAccessToken({
       id: user._id,
@@ -154,7 +183,7 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        department: user.department, // ✅ ADDED
+        department: user.department,
         profileImage: user.profileImage,
         isVerified: user.isVerified,
         twoFactorEnabled: user.twoFactorEnabled
@@ -221,6 +250,16 @@ exports.verifyTwoFALogin = async (req, res) => {
     user.lastLogin = new Date()
     await user.save()
 
+    // ✅ ADD AUDIT LOG: 2FA Login Success
+    await AuditLog.create({
+      user: user._id,
+      action: 'LOGIN_2FA',
+      category: 'auth',
+      severity: 'success',
+      description: `User logged in via 2FA`,
+      ip: req.ip || req.connection.remoteAddress
+    })
+
     const accessToken = generateAccessToken({
       id: user._id,
       email: user.email,
@@ -237,7 +276,7 @@ exports.verifyTwoFALogin = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        department: user.department, // ✅ ADDED
+        department: user.department,
         profileImage: user.profileImage,
         isVerified: user.isVerified,
         twoFactorEnabled: user.twoFactorEnabled
@@ -261,17 +300,11 @@ exports.setupTwoFA = async (req, res) => {
     const user = await User.findById(userId)
 
     if (!user) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        message: 'User not found'
-      })
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'User not found' })
     }
 
     if (user.twoFactorEnabled) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: '2FA is already enabled. Disable it first to reconfigure.'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: '2FA is already enabled.' })
     }
 
     const secret = speakeasy.generateSecret({
@@ -293,10 +326,7 @@ exports.setupTwoFA = async (req, res) => {
     })
   } catch (error) {
     console.error('Setup 2FA error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to set up 2FA'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Failed to set up 2FA' })
   }
 }
 
@@ -308,20 +338,14 @@ exports.verifyTwoFA = async (req, res) => {
     const { token } = req.body
 
     if (!token || token.length !== 6) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Please provide a valid 6-digit code'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Please provide a valid 6-digit code' })
     }
 
     const userId = req.user._id || req.user.id
     const user = await User.findById(userId).select('+twoFactorSecret')
 
     if (!user || !user.twoFactorSecret) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Please set up 2FA first'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Please set up 2FA first' })
     }
 
     const verified = speakeasy.totp.verify({
@@ -332,34 +356,32 @@ exports.verifyTwoFA = async (req, res) => {
     })
 
     if (!verified) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Invalid or expired code. Please try again.'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Invalid or expired code. Please try again.' })
     }
 
     const backupCodes = []
     for (let i = 0; i < 8; i++) {
-      backupCodes.push(
-        Math.random().toString(36).substring(2, 10).toUpperCase()
-      )
+      backupCodes.push(Math.random().toString(36).substring(2, 10).toUpperCase())
     }
 
     user.twoFactorEnabled = true
     user.twoFactorBackupCodes = backupCodes
     await user.save()
 
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: '2FA enabled successfully',
-      backupCodes
+    // ✅ ADD AUDIT LOG: 2FA Enabled
+    await AuditLog.create({
+      user: user._id,
+      action: 'ENABLE_2FA',
+      category: 'auth',
+      severity: 'warning',
+      description: `User enabled Two-Factor Authentication`,
+      ip: req.ip || req.connection.remoteAddress
     })
+
+    res.status(HTTP_STATUS.OK).json({ success: true, message: '2FA enabled successfully', backupCodes })
   } catch (error) {
     console.error('Verify 2FA error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to verify 2FA'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Failed to verify 2FA' })
   }
 }
 
@@ -372,10 +394,7 @@ exports.disableTwoFA = async (req, res) => {
     const user = await User.findById(userId)
 
     if (!user) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        message: 'User not found'
-      })
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'User not found' })
     }
 
     user.twoFactorEnabled = false
@@ -383,16 +402,20 @@ exports.disableTwoFA = async (req, res) => {
     user.twoFactorBackupCodes = undefined
     await user.save()
 
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: '2FA disabled successfully'
+    // ✅ ADD AUDIT LOG: 2FA Disabled
+    await AuditLog.create({
+      user: user._id,
+      action: 'DISABLE_2FA',
+      category: 'auth',
+      severity: 'warning',
+      description: `User disabled Two-Factor Authentication`,
+      ip: req.ip || req.connection.remoteAddress
     })
+
+    res.status(HTTP_STATUS.OK).json({ success: true, message: '2FA disabled successfully' })
   } catch (error) {
     console.error('Disable 2FA error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to disable 2FA'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Failed to disable 2FA' })
   }
 }
 
@@ -404,10 +427,7 @@ exports.getMe = async (req, res) => {
     const user = await User.findById(req.user.id).select('-password')
 
     if (!user) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        message: 'User not found'
-      })
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'User not found' })
     }
 
     res.status(HTTP_STATUS.OK).json({
@@ -418,7 +438,7 @@ exports.getMe = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        department: user.department, // ✅ ADDED
+        department: user.department,
         profileImage: user.profileImage,
         isVerified: user.isVerified,
         twoFactorEnabled: user.twoFactorEnabled,
@@ -428,10 +448,7 @@ exports.getMe = async (req, res) => {
     })
   } catch (error) {
     console.error('Get me error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Failed to fetch user'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Failed to fetch user' })
   }
 }
 
@@ -439,10 +456,7 @@ exports.getMe = async (req, res) => {
 // LOGOUT
 // ===================================
 exports.logout = async (req, res) => {
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Logged out successfully'
-  })
+  res.status(HTTP_STATUS.OK).json({ success: true, message: 'Logged out successfully' })
 }
 
 // ===================================
@@ -453,10 +467,7 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body
 
     if (!email) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Email is required'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Email is required' })
     }
 
     const user = await User.findOne({ email: email.toLowerCase() })
@@ -469,10 +480,7 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex')
-    const hashedToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex')
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex')
 
     user.resetPasswordToken = hashedToken
     user.resetPasswordExpire = Date.now() + 15 * 60 * 1000
@@ -487,27 +495,18 @@ exports.forgotPassword = async (req, res) => {
         html: emailTemplates.passwordReset(user.name, resetLink)
       })
 
-      res.status(HTTP_STATUS.OK).json({
-        success: true,
-        message: 'Password reset link sent to your email'
-      })
+      res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password reset link sent to your email' })
     } catch (emailError) {
       user.resetPasswordToken = undefined
       user.resetPasswordExpire = undefined
       await user.save()
 
       console.error('Email send failed:', emailError.message)
-      res.status(HTTP_STATUS.SERVER_ERROR).json({
-        success: false,
-        message: 'Email could not be sent. Please try again later.'
-      })
+      res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Email could not be sent. Please try again later.' })
     }
   } catch (error) {
     console.error('Forgot password error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Request failed. Please try again.'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Request failed. Please try again.' })
   }
 }
 
@@ -525,21 +524,12 @@ exports.verifyResetToken = async (req, res) => {
     })
 
     if (!user) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Invalid or expired reset token'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Invalid or expired reset token' })
     }
 
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      email: user.email
-    })
+    res.status(HTTP_STATUS.OK).json({ success: true, email: user.email })
   } catch (error) {
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Verification failed'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Verification failed' })
   }
 }
 
@@ -551,17 +541,11 @@ exports.resetPassword = async (req, res) => {
     const { token, newPassword } = req.body
 
     if (!token || !newPassword) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Token and new password are required'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Token and new password are required' })
     }
 
     if (newPassword.length < 6) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Password must be at least 6 characters'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Password must be at least 6 characters' })
     }
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
@@ -572,10 +556,7 @@ exports.resetPassword = async (req, res) => {
     })
 
     if (!user) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Invalid or expired reset token'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Invalid or expired reset token' })
     }
 
     const salt = await bcrypt.genSalt(10)
@@ -584,16 +565,20 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordExpire = undefined
     await user.save()
 
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: 'Password reset successful. You can now login.'
+    // ✅ ADD AUDIT LOG: Password Reset
+    await AuditLog.create({
+      user: user._id,
+      action: 'PASSWORD_RESET',
+      category: 'auth',
+      severity: 'warning',
+      description: `User reset their password`,
+      ip: req.ip || req.connection.remoteAddress
     })
+
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password reset successful. You can now login.' })
   } catch (error) {
     console.error('Reset password error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Reset failed. Please try again.'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Reset failed. Please try again.' })
   }
 }
 
@@ -615,23 +600,13 @@ exports.updateProfile = async (req, res) => {
     }).select('-password')
 
     if (!user) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        message: 'User not found'
-      })
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'User not found' })
     }
 
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: 'Profile updated successfully',
-      user
-    })
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Profile updated successfully', user })
   } catch (error) {
     console.error('Update profile error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Update failed. Please try again.'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Update failed. Please try again.' })
   }
 }
 
@@ -643,42 +618,37 @@ exports.changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body
 
     if (!currentPassword || !newPassword) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'Current and new passwords are required'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Current and new passwords are required' })
     }
 
     if (newPassword.length < 6) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        success: false,
-        message: 'New password must be at least 6 characters'
-      })
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'New password must be at least 6 characters' })
     }
 
     const user = await User.findById(req.user.id).select('+password')
 
     const isMatch = await bcrypt.compare(currentPassword, user.password)
     if (!isMatch) {
-      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
-        success: false,
-        message: 'Current password is incorrect'
-      })
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({ success: false, message: 'Current password is incorrect' })
     }
 
     const salt = await bcrypt.genSalt(10)
     user.password = await bcrypt.hash(newPassword, salt)
     await user.save()
 
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
-      message: 'Password changed successfully'
+    // ✅ ADD AUDIT LOG: Password Changed
+    await AuditLog.create({
+      user: user._id,
+      action: 'PASSWORD_CHANGED',
+      category: 'auth',
+      severity: 'warning',
+      description: `User changed their password`,
+      ip: req.ip || req.connection.remoteAddress
     })
+
+    res.status(HTTP_STATUS.OK).json({ success: true, message: 'Password changed successfully' })
   } catch (error) {
     console.error('Change password error:', error)
-    res.status(HTTP_STATUS.SERVER_ERROR).json({
-      success: false,
-      message: 'Password change failed'
-    })
+    res.status(HTTP_STATUS.SERVER_ERROR).json({ success: false, message: 'Password change failed' })
   }
 }

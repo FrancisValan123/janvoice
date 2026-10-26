@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
 
 const DepartmentStats = () => {
   const menuItems = [
@@ -13,104 +14,161 @@ const DepartmentStats = () => {
     { icon: '⚙️', label: 'Settings', path: '/department/settings' }
   ]
 
-  const stats = [
-    { name: 'Public Works', code: 'PW', color: '#FF6B35', officers: 12, complaints: 45, resolved: 38, pending: 7, sla: 84, avgDays: 6.2, trend: 12 },
-    { name: 'Water Supply', code: 'WS', color: '#4299E1', officers: 8, complaints: 32, resolved: 28, pending: 4, sla: 88, avgDays: 5.1, trend: 8 },
-    { name: 'Sanitation', code: 'SN', color: '#38A169', officers: 15, complaints: 58, resolved: 52, pending: 6, sla: 90, avgDays: 4.8, trend: 15 },
-    { name: 'Electricity', code: 'EL', color: '#ED8936', officers: 6, complaints: 22, resolved: 18, pending: 4, sla: 82, avgDays: 7.4, trend: -3 },
-    { name: 'Transport', code: 'TR', color: '#805AD5', officers: 4, complaints: 15, resolved: 12, pending: 3, sla: 80, avgDays: 8.1, trend: 5 },
-    { name: 'Health', code: 'HL', color: '#E53E3E', officers: 5, complaints: 18, resolved: 16, pending: 2, sla: 89, avgDays: 3.5, trend: 10 }
-  ]
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState({
+    departmentName: '',
+    totalComplaints: 0,
+    resolved: 0,
+    pending: 0,
+    officers: 0,
+    slaPercent: 0,
+    avgDays: 0,
+    categories: []
+  })
 
-  const totals = {
-    complaints: stats.reduce((s, d) => s + d.complaints, 0),
-    resolved: stats.reduce((s, d) => s + d.resolved, 0),
-    pending: stats.reduce((s, d) => s + d.pending, 0),
-    officers: stats.reduce((s, d) => s + d.officers, 0),
-    avgSla: Math.round(stats.reduce((s, d) => s + d.sla, 0) / stats.length)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get('/department/stats')
+        if (res.data.success) {
+          setData(res.data.data)
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  const getCategoryMeta = (cat) => {
+    const map = {
+      roads: { name: 'Roads & Infrastructure', color: '#FF6B35', icon: '🛣️' },
+      water: { name: 'Water Supply', color: '#4299E1', icon: '💧' },
+      sanitation: { name: 'Sanitation & Waste', color: '#38A169', icon: '🗑️' },
+      electricity: { name: 'Electricity', color: '#ED8936', icon: '⚡' },
+      safety: { name: 'Public Safety', color: '#E53E3E', icon: '🚨' },
+      transport: { name: 'Transport', color: '#805AD5', icon: '🚌' },
+      health: { name: 'Health', color: '#E53E3E', icon: '🏥' },
+      education: { name: 'Education', color: '#3182CE', icon: '📚' },
+      environment: { name: 'Environment', color: '#38A169', icon: '🌳' },
+      other: { name: 'Other', color: '#718096', icon: '📁' }
+    }
+    return map[cat.toLowerCase()] || map.other
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout role="department_admin" menuItems={menuItems} title="Department Statistics">
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
+          ⏳ Loading statistics...
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
     <DashboardLayout role="department_admin" menuItems={menuItems} title="Department Statistics">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #1a202c, #2d3748)', borderRadius: '14px', padding: '28px', color: 'white', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>📊 Department Statistics</h2>
-          <p style={{ fontSize: '14px', opacity: 0.9 }}>Comprehensive performance overview of all departments</p>
+        
+        {/* ✅ FIXED: Header Banner with explicit white text */}
+        <div style={{ 
+          background: 'linear-gradient(135deg, #1a202c, #2d3748)', 
+          borderRadius: '14px', 
+          padding: '28px', 
+          marginBottom: '20px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF' }}>
+            📊 Department Statistics
+          </h2>
+          <p style={{ fontSize: '14px', opacity: 0.9, color: '#E2E8F0' }}>
+            Comprehensive performance overview of {data.departmentName}
+          </p>
         </div>
 
         {/* Overall Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#FF6B35', lineHeight: 1, marginBottom: '4px' }}>{totals.complaints}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Complaints</div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderLeft: '4px solid #FF6B35' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#FF6B35', lineHeight: 1, marginBottom: '4px' }}>{data.totalComplaints}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Total Complaints</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{totals.resolved}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Resolved</div>
+          
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderLeft: '4px solid #38A169' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{data.resolved}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Resolved</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#ED8936', lineHeight: 1, marginBottom: '4px' }}>{totals.pending}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Pending</div>
+          
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderLeft: '4px solid #ED8936' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#ED8936', lineHeight: 1, marginBottom: '4px' }}>{data.pending}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Pending</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#805AD5', lineHeight: 1, marginBottom: '4px' }}>{totals.officers}</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Officers</div>
+          
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderLeft: '4px solid #805AD5' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#805AD5', lineHeight: 1, marginBottom: '4px' }}>{data.officers}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Officers</div>
           </div>
-          <div style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', textAlign: 'center' }}>
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{totals.avgSla}%</div>
-            <div style={{ fontSize: '11px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Avg SLA</div>
+          
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow-sm)', textAlign: 'center', borderLeft: '4px solid #38A169' }}>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: 1, marginBottom: '4px' }}>{data.slaPercent}%</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.5px' }}>Avg SLA</div>
           </div>
         </div>
 
-        {/* Department Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-          {stats.map((dept) => (
-            <div key={dept.code} style={{ background: 'white', borderRadius: '14px', padding: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderTop: `4px solid ${dept.color}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '800', background: dept.color + '20', color: dept.color, letterSpacing: '1px' }}>
-                    {dept.code}
-                  </span>
-                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1a202c' }}>{dept.name}</h3>
-                </div>
-                <span style={{ fontSize: '12px', fontWeight: '800', color: dept.trend >= 0 ? '#38A169' : '#E53E3E' }}>
-                  {dept.trend >= 0 ? '↑' : '↓'} {Math.abs(dept.trend)}%
-                </span>
-              </div>
+        {/* Category Breakdown */}
+        {data.categories.length === 0 ? (
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '16px', padding: '60px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>No Data Yet</h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>No complaints have been registered for your department yet.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+            {data.categories.map((cat) => {
+              const meta = getCategoryMeta(cat._id)
+              const sla = cat.total > 0 ? Math.round((cat.resolved / cat.total) * 100) : 0
+              return (
+                <div key={cat._id} style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '22px', boxShadow: 'var(--shadow-sm)', borderTop: `4px solid ${meta.color}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '800', background: meta.color + '20', color: meta.color, letterSpacing: '1px' }}>
+                        {meta.icon} {cat._id || 'Other'}
+                      </span>
+                    </div>
+                  </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a202c', lineHeight: 1 }}>{dept.complaints}</div>
-                  <div style={{ fontSize: '10px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', marginTop: '4px' }}>Total</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#38A169', lineHeight: 1 }}>{dept.resolved}</div>
-                  <div style={{ fontSize: '10px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', marginTop: '4px' }}>Resolved</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#ED8936', lineHeight: 1 }}>{dept.pending}</div>
-                  <div style={{ fontSize: '10px', color: '#718096', textTransform: 'uppercase', fontWeight: '700', marginTop: '4px' }}>Pending</div>
-                </div>
-              </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                    <div>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1 }}>{cat.total}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', marginTop: '4px' }}>Total</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: '#38A169', lineHeight: 1 }}>{cat.resolved}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', marginTop: '4px' }}>Resolved</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: '#ED8936', lineHeight: 1 }}>{cat.pending}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '700', marginTop: '4px' }}>Pending</div>
+                    </div>
+                  </div>
 
-              <div style={{ paddingTop: '12px', borderTop: '1px solid #edf2f7' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
-                  <span style={{ color: '#718096', fontWeight: '600' }}>SLA Compliance</span>
-                  <span style={{ color: dept.color, fontWeight: '800' }}>{dept.sla}%</span>
+                  <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-tertiary)', fontWeight: '600' }}>Resolution Rate</span>
+                      <span style={{ color: meta.color, fontWeight: '800' }}>{sla}%</span>
+                    </div>
+                    <div style={{ height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${sla}%`, height: '100%', background: meta.color, borderRadius: '3px' }}></div>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ height: '6px', background: '#edf2f7', borderRadius: '3px', overflow: 'hidden', marginBottom: '12px' }}>
-                  <div style={{ width: `${dept.sla}%`, height: '100%', background: dept.color, borderRadius: '3px' }}></div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                  <span style={{ color: '#718096', fontWeight: '600' }}>👥 {dept.officers} officers</span>
-                  <span style={{ color: '#718096', fontWeight: '600' }}>⏱️ {dept.avgDays}d avg</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

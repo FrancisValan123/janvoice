@@ -223,12 +223,90 @@ exports.getOverdueCases = async (req, res) => {
   }
 }
 
+// ===================================
+// GET DEPARTMENT STATS (✅ REAL DATA)
+// ===================================
 exports.getDepartmentStats = async (req, res) => {
   try {
+    const departmentName = req.user.department
+
+    if (!departmentName) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'You are not assigned to a department.'
+      })
+    }
+
+    // --- Aggregate Overall Stats ---
     const stats = await Complaint.aggregate([
+      { $match: { department: departmentName } },
       {
         $group: {
-          _id: '$department',
+          _id: null,
+          totalComplaints: { $sum: 1 },
+          resolved: {
+            $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+          },
+          pending: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    '$status',
+                    ['pending', 'assigned', 'investigating', 'in-progress']
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      }
+    ])
+
+    const totals = stats[0] || { totalComplaints: 0, resolved: 0, pending: 0 }
+    const officers = await User.countDocuments({
+      department: departmentName,
+      role: 'officer',
+      isActive: true
+    })
+
+    const slaPercent = totals.totalComplaints > 0
+      ? Math.round((totals.resolved / totals.totalComplaints) * 100)
+      : 0
+
+    // --- Aggregate Avg Resolution Days ---
+    const avgResolution = await Complaint.aggregate([
+      {
+        $match: {
+          department: departmentName,
+          status: 'resolved',
+          resolvedAt: { $ne: null }
+        }
+      },
+      {
+        $project: {
+          duration: { $subtract: ['$resolvedAt', '$createdAt'] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          avgMs: { $avg: '$duration' }
+        }
+      }
+    ])
+    const avgDays = avgResolution[0]
+      ? Math.round((avgResolution[0].avgMs / (1000 * 60 * 60 * 24)) * 10) / 10
+      : 0
+
+    // --- Aggregate Breakdown by Category ---
+    const categories = await Complaint.aggregate([
+      { $match: { department: departmentName } },
+      {
+        $group: {
+          _id: '$category',
           total: { $sum: 1 },
           resolved: {
             $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
@@ -248,36 +326,21 @@ exports.getDepartmentStats = async (req, res) => {
             }
           }
         }
-      },
-      {
-        $project: {
-          name: '$_id',
-          total: 1,
-          resolved: 1,
-          pending: 1,
-          sla: {
-            $cond: [
-              { $gt: ['$total', 0] },
-              {
-                $round: [
-                  {
-                    $multiply: [{ $divide: ['$resolved', '$total'] }, 100]
-                  },
-                  0
-                ]
-              },
-              0
-            ]
-          },
-          _id: 0
-        }
-      },
-      { $sort: { total: -1 } }
+      }
     ])
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      departments: stats
+      data: {
+        departmentName,
+        totalComplaints: totals.totalComplaints,
+        resolved: totals.resolved,
+        pending: totals.pending,
+        officers,
+        slaPercent,
+        avgDays,
+        categories: categories || []
+      }
     })
   } catch (error) {
     console.error('Dept stats error:', error)

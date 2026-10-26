@@ -1,7 +1,3 @@
-/* ===================================
-   JANVOICE — FEEDBACK MODEL
-   =================================== */
-
 const mongoose = require('mongoose')
 
 const feedbackSchema = new mongoose.Schema(
@@ -10,7 +6,7 @@ const feedbackSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Complaint',
       required: true,
-      unique: true
+      unique: true // ✅ This prevents duplicate feedback in the DB
     },
     citizen: {
       type: mongoose.Schema.Types.ObjectId,
@@ -49,9 +45,5 @@ const feedbackSchema = new mongoose.Schema(
   },
   { timestamps: true }
 )
-
-feedbackSchema.index({ officer: 1 })
-feedbackSchema.index({ rating: -1 })
-feedbackSchema.index({ department: 1 })
 
 module.exports = mongoose.model('Feedback', feedbackSchema)

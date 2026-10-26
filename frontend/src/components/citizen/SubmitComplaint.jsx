@@ -1,8 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../common/DashboardLayout'
 import { api } from '../../services/api'
 import './SubmitComplaint.css'
+
+// ===================================
+// MASTER MAP: Department Name -> Icon
+// This maps the DB department names to visual icons
+// ===================================
+const DEPARTMENT_ICONS = {
+  'Public Works': '🛣️',
+  'Water Supply': '💧',
+  'Sanitation': '🗑️',
+  'Electricity': '⚡',
+  'Public Safety': '🚨',
+  'Transport': '🚌',
+  'Health': '🏥',
+  'Education': '📚',
+  'Environment': '🌳',
+  'General': '📁'
+}
 
 const SubmitComplaint = () => {
   const navigate = useNavigate()
@@ -16,25 +33,16 @@ const SubmitComplaint = () => {
     { icon: '👤', label: 'My Profile', path: '/citizen/profile' }
   ]
 
-  const categories = [
-    { id: 'roads', name: 'Roads & Infrastructure', icon: '🛣️' },
-    { id: 'water', name: 'Water Supply', icon: '💧' },
-    { id: 'sanitation', name: 'Sanitation & Waste', icon: '🗑️' },
-    { id: 'electricity', name: 'Electricity', icon: '⚡' },
-    { id: 'safety', name: 'Public Safety', icon: '🚨' },
-    { id: 'transport', name: 'Transport', icon: '🚌' },
-    { id: 'health', name: 'Health', icon: '🏥' },
-    { id: 'education', name: 'Education', icon: '📚' },
-    { id: 'environment', name: 'Environment', icon: '🌳' },
-    { id: 'other', name: 'Other', icon: '📁' }
-  ]
-
   const priorities = [
     { id: 'emergency', label: 'Emergency', icon: '🔴', desc: 'Immediate danger', color: '#E53E3E' },
     { id: 'high', label: 'High Priority', icon: '🟠', desc: 'Significant impact', color: '#F7931E' },
     { id: 'normal', label: 'Normal', icon: '🟡', desc: 'Routine issue', color: '#ECC94B' },
     { id: 'low', label: 'Low', icon: '🔵', desc: 'Minor issue', color: '#4299E1' }
   ]
+
+  // ✅ State to hold dynamic categories based on DB
+  const [availableCategories, setAvailableCategories] = useState([])
+  const [loadingDepartments, setLoadingDepartments] = useState(true)
 
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
@@ -49,7 +57,7 @@ const SubmitComplaint = () => {
       pincode: ''
     },
     affectedPeople: 1,
-    evidence: [] // ✅ Now stores { url, publicId, type, name, size }
+    evidence: []
   })
 
   const [errors, setErrors] = useState({})
@@ -58,6 +66,58 @@ const SubmitComplaint = () => {
   const [submitted, setSubmitted] = useState(false)
   const [complaintId, setComplaintId] = useState('')
   const [serverError, setServerError] = useState('')
+
+  // ===================================
+  // FETCH REAL DEPARTMENTS AND BUILD CATEGORIES
+  // ===================================
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await api.get('/departments')
+        const departments = res.data?.departments || []
+        
+        // Convert the list of departments into the category format the UI needs
+        const dynamicCategories = departments.map(dept => {
+          const name = dept.name
+          // The backend expects the category ID to be a slug (e.g., 'public-works')
+          // We also need to make sure it matches the backend's expected categories if it's strict.
+          // However, the backend's complaintController maps specific slugs to departments.
+          // Let's create a slug from the name.
+          const slug = name.toLowerCase().replace(/\s+/g, '-')
+          
+          return {
+            id: slug, // e.g., 'public-works'
+            name: name, // e.g., 'Public Works'
+            icon: DEPARTMENT_ICONS[name] || '📋', // Use mapped icon or fallback
+            department: name
+          }
+        })
+
+        // Always add "Other" at the end
+        if (!dynamicCategories.find(c => c.name === 'General' || c.name === 'Other')) {
+             dynamicCategories.push({
+                id: 'other',
+                name: 'Other',
+                icon: '📁',
+                department: 'General'
+             })
+        }
+
+        setAvailableCategories(dynamicCategories)
+
+      } catch (err) {
+        console.error('Failed to load departments:', err)
+        // Fallback to a basic list if API fails so the form is still usable
+        setAvailableCategories([
+            { id: 'other', name: 'Other', icon: '📁', department: 'General' }
+        ])
+      } finally {
+        setLoadingDepartments(false)
+      }
+    }
+
+    fetchDepartments()
+  }, [])
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -103,14 +163,10 @@ const SubmitComplaint = () => {
 
   const handleBack = () => setStep(step - 1)
 
-  // ===================================
-  // ✅ UPLOAD FILES TO CLOUDINARY VIA BACKEND
-  // ===================================
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
-    // Limit to 5 files total
     if (formData.evidence.length + files.length > 5) {
       setServerError('Maximum 5 files allowed')
       return
@@ -148,9 +204,6 @@ const SubmitComplaint = () => {
     }
   }
 
-  // ===================================
-  // ✅ REMOVE FILE (also deletes from Cloudinary)
-  // ===================================
   const removeFile = async (index) => {
     const file = formData.evidence[index]
     if (!file) return
@@ -171,9 +224,6 @@ const SubmitComplaint = () => {
     }
   }
 
-  // ===================================
-  // ✅ SUBMIT COMPLAINT WITH EVIDENCE URLS
-  // ===================================
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -183,7 +233,8 @@ const SubmitComplaint = () => {
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        category: formData.category,
+        // ✅ Send the category ID (slug)
+        category: formData.category, 
         priority: formData.priority,
         location: {
           address: formData.location.address.trim(),
@@ -192,7 +243,6 @@ const SubmitComplaint = () => {
           pincode: formData.location.pincode.trim()
         },
         affectedPeople: parseInt(formData.affectedPeople, 10) || 1,
-        // ✅ Send real evidence URLs
         evidence: formData.evidence.map((f) => ({
           url: f.url,
           publicId: f.publicId,
@@ -221,7 +271,6 @@ const SubmitComplaint = () => {
     }
   }
 
-  // Success screen
   if (submitted) {
     return (
       <DashboardLayout role="citizen" menuItems={menuItems} title="Complaint Submitted">
@@ -268,10 +317,20 @@ const SubmitComplaint = () => {
     )
   }
 
+  // Prevent form render until categories are loaded
+  if (loadingDepartments) {
+    return (
+      <DashboardLayout role="citizen" menuItems={menuItems} title="Submit Complaint">
+        <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+          ⏳ Loading available categories...
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout role="citizen" menuItems={menuItems} title="Submit Complaint">
       <div className="submit-container">
-        {/* Progress Indicator */}
         <div className="progress-steps">
           {[
             { n: 1, label: 'Basic Info' },
@@ -306,7 +365,6 @@ const SubmitComplaint = () => {
             </div>
           )}
 
-          {/* STEP 1 */}
           {step === 1 && (
             <div className="step-content">
               <h2 className="step-title">📝 Complaint Details</h2>
@@ -330,7 +388,8 @@ const SubmitComplaint = () => {
               <div className="form-group">
                 <label>Category *</label>
                 <div className="category-grid">
-                  {categories.map((cat) => (
+                  {/* ✅ Renders categories fetched from DB */}
+                  {availableCategories.map((cat) => (
                     <button
                       key={cat.id}
                       type="button"
@@ -413,7 +472,6 @@ const SubmitComplaint = () => {
             </div>
           )}
 
-          {/* STEP 2 */}
           {step === 2 && (
             <div className="step-content">
               <h2 className="step-title">📍 Location Details</h2>
@@ -472,7 +530,6 @@ const SubmitComplaint = () => {
             </div>
           )}
 
-          {/* STEP 3 */}
           {step === 3 && (
             <div className="step-content">
               <h2 className="step-title">📸 Upload Evidence (Optional)</h2>
@@ -559,7 +616,6 @@ const SubmitComplaint = () => {
             </div>
           )}
 
-          {/* STEP 4 */}
           {step === 4 && (
             <div className="step-content">
               <h2 className="step-title">✅ Review & Submit</h2>
@@ -577,8 +633,8 @@ const SubmitComplaint = () => {
                   <div className="review-section">
                     <div className="review-label">Category</div>
                     <div className="review-value">
-                      {categories.find((c) => c.id === formData.category)?.icon}{' '}
-                      {categories.find((c) => c.id === formData.category)?.name}
+                      {availableCategories.find((c) => c.id === formData.category)?.icon}{' '}
+                      {availableCategories.find((c) => c.id === formData.category)?.name}
                     </div>
                   </div>
                   <div className="review-section">
@@ -622,7 +678,6 @@ const SubmitComplaint = () => {
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="form-navigation">
             {step > 1 && (
               <button

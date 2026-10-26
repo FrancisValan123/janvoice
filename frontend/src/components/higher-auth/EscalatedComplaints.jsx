@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom' // ✅ Import useNavigate
 import DashboardLayout from '../common/DashboardLayout'
 import { api } from '../../services/api'
 
 const EscalatedComplaints = () => {
+  const navigate = useNavigate() // ✅ Initialize navigate
+
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/authority/dashboard' },
     { icon: '🚨', label: 'Escalated Cases', path: '/authority/escalated' },
@@ -19,9 +22,6 @@ const EscalatedComplaints = () => {
   const [filter, setFilter] = useState('all')
   const [sortBy, setSortBy] = useState('severity')
 
-  // ===================================
-  // FETCH REAL DATA
-  // ===================================
   useEffect(() => {
     const fetchEscalated = async () => {
       try {
@@ -90,7 +90,6 @@ const EscalatedComplaints = () => {
     <DashboardLayout role="higher_authority" menuItems={menuItems} title="Escalated Complaints">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* ✅ FIXED: Added explicit white color to banner text */}
         <div style={{ background: 'linear-gradient(135deg, #742A2A, #C53030)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', boxShadow: '0 12px 32px rgba(197, 48, 48, 0.25)' }}>
           <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
             🚨 Escalated Complaints
@@ -188,11 +187,18 @@ const EscalatedComplaints = () => {
                     </div>
                   </div>
 
+                  {/* ✅ FIXED: Added onClick handlers to navigate */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '160px' }}>
-                    <button style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #C53030, #9B2C2C)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(197, 48, 48, 0.3)' }}>
+                    <button 
+                      onClick={() => navigate(`/authority/complaints/${c._id}`)}
+                      style={{ padding: '12px 20px', background: 'linear-gradient(135deg, #C53030, #9B2C2C)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 12px rgba(197, 48, 48, 0.3)' }}
+                    >
                       🚨 Take Action
                     </button>
-                    <button style={{ padding: '12px 20px', background: 'var(--bg-surface-secondary)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    <button 
+                      onClick={() => navigate(`/authority/complaints/${c._id}`)}
+                      style={{ padding: '12px 20px', background: 'var(--bg-surface-secondary)', border: '2px solid var(--border-light)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
                       👁️ View Details
                     </button>
                   </div>

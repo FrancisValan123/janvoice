@@ -74,6 +74,7 @@ import DepartmentDashboard from './components/department/DepartmentDashboard'
 import AssignOfficers from './components/department/AssignOfficers'
 import MonitorDeadlines from './components/department/MonitorDeadlines'
 import EscalateCases from './components/department/EscalateCases'
+import EscalateSingleCase from './components/department/EscalateSingleCase'
 import DepartmentStats from './components/department/DepartmentStats'
 import ComplaintAnalytics from './components/department/ComplaintAnalytics'
 import OfficerPerformance from './components/department/OfficerPerformance'
@@ -81,6 +82,7 @@ import ResourceAllocation from './components/department/ResourceAllocation'
 import SLAReports from './components/department/SLAReports'
 import DepartmentSettings from './components/department/DepartmentSettings'
 import DepartmentProfile from './components/department/DepartmentProfile'
+import DepartmentComplaintDetails from './components/department/DepartmentComplaintDetails'
 
 // ===================================
 // HIGHER AUTHORITY PAGES
@@ -93,8 +95,11 @@ import DepartmentComparison from './components/higher-auth/DepartmentComparison'
 import ActionTakenReport from './components/higher-auth/ActionTakenReport'
 import MonthlyStatistics from './components/higher-auth/MonthlyStatistics'
 import RecommendationSystem from './components/higher-auth/RecommendationSystem'
-import AuthorityProfile from './components/higher-auth/AuthorityProfile' // ✅ ADDED
-import AuthoritySettings from './components/higher-auth/AuthoritySettings' // ✅ ADDED
+import AuthorityProfile from './components/higher-auth/AuthorityProfile'
+import AuthoritySettings from './components/higher-auth/AuthoritySettings'
+
+// ✅ NEW IMPORT: Higher Authority Complaint Details
+import AuthorityComplaintDetails from './components/higher-auth/AuthorityComplaintDetails'
 
 // ===================================
 // ADMIN PAGES
@@ -102,7 +107,6 @@ import AuthoritySettings from './components/higher-auth/AuthoritySettings' // �
 import AdminDashboard from './components/admin/AdminDashboard'
 import UserManagement from './components/admin/UserManagement'
 import DepartmentManagement from './components/admin/DepartmentManagement'
-import CategoryManagement from './components/admin/CategoryManagement'
 import RoleManagement from './components/admin/RoleManagement'
 import AuditLog from './components/admin/AuditLog'
 import Backups from './components/admin/Backups'
@@ -415,6 +419,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          <Route
+            path="/department/complaints/:id"
+            element={
+              <ProtectedRoute allowedRoles={['department_admin']}>
+                <DepartmentComplaintDetails />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/department/escalate"
             element={
@@ -423,6 +437,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/department/escalate/:id"
+            element={
+              <ProtectedRoute allowedRoles={['department_admin']}>
+                <EscalateSingleCase />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/department/stats"
             element={
@@ -507,6 +531,17 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* ✅ FIXED: Use the dedicated AuthorityComplaintDetails component */}
+          <Route
+            path="/authority/complaints/:id"
+            element={
+              <ProtectedRoute allowedRoles={['higher_authority']}>
+                <AuthorityComplaintDetails />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/authority/performance"
             element={
@@ -571,7 +606,6 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="departments" element={<DepartmentManagement />} />
-            <Route path="categories" element={<CategoryManagement />} />
             <Route path="roles" element={<RoleManagement />} />
             <Route path="audit" element={<AuditLog />} />
             <Route path="backups" element={<Backups />} />

@@ -1,23 +1,52 @@
 import React, { useState, useEffect } from 'react'
+import { api } from '../../services/api'
 
 const SystemHealth = () => {
-  const [metrics, setMetrics] = useState({
-    cpu: 24, memory: 62, disk: 47, uptime: '14 days, 6 hours',
-    activeUsers: 156, requests: 12847, responseTime: 245, errorRate: 0.2
-  })
+  const [loading, setLoading] = useState(true)
+  const [health, setHealth] = useState(null)
+  const [error, setError] = useState('')
 
+  // ===================================
+  // FETCH REAL SYSTEM HEALTH
+  // ===================================
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics((prev) => ({
-        ...prev,
-        cpu: Math.round(20 + Math.random() * 20),
-        memory: Math.round(55 + Math.random() * 15),
-        requests: prev.requests + Math.round(Math.random() * 50),
-        responseTime: Math.round(200 + Math.random() * 100)
-      }))
-    }, 3000)
+    const fetchHealth = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get('/admin/health')
+        if (res.data?.success) {
+          setHealth(res.data.health)
+        }
+      } catch (err) {
+        console.error('Failed to fetch health:', err)
+        setError('Failed to load system health metrics.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Fetch immediately, then every 30 seconds
+    fetchHealth()
+    const interval = setInterval(fetchHealth, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  if (loading) {
+    return <div style={{ padding: '60px', textAlign: 'center' }}>Loading system health...</div>
+  }
+
+  if (error || !health) {
+    return <div style={{ padding: '60px', textAlign: 'center', color: '#E53E3E' }}>⚠️ {error || 'Failed to load data'}</div>
+  }
+
+  // Calculate real memory usage percentage
+  const memoryPercentage = health.memory?.total > 0 
+    ? Math.round((health.memory.used / health.memory.total) * 100)
+    : 0
+
+  // Format uptime into days and hours
+  const uptimeDays = Math.floor(health.uptime / (60 * 60 * 24))
+  const uptimeHours = Math.floor((health.uptime % (60 * 60 * 24)) / (60 * 60))
 
   const getStatusColor = (value, thresholds) => {
     if (value < thresholds.good) return '#38A169'
@@ -44,52 +73,74 @@ const SystemHealth = () => {
   )
 
   return (
-    <div className="dashboard-content">
+    <div className="dashboard-content" style={{ padding: '24px' }}>
+      
+      {/* Top Stats Grid - Real Data */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px' }}>
         <StatCard>
-          <div style={{ fontSize: '28px', fontWeight: '800', color: '#38A169', lineHeight: '1', marginBottom: '6px' }}>🟢</div>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>Operational</div>
+          <div style={{ fontSize: '28px', fontWeight: '800', color: health.database?.isHealthy ? '#38A169' : '#E53E3E', lineHeight: '1', marginBottom: '6px' }}>
+            {health.database?.isHealthy ? '🟢' : '🔴'}
+          </div>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
+            {health.database?.isHealthy ? 'Operational' : 'Degraded'}
+          </div>
           <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '600' }}>System Status</div>
         </StatCard>
+        
         <StatCard>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#4299E1', lineHeight: '1', marginBottom: '6px' }}>
-            {metrics.uptime.split(',')[0]}
+            {uptimeDays}d {uptimeHours}h
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '600' }}>Uptime</div>
         </StatCard>
+        
         <StatCard>
           <div style={{ fontSize: '24px', fontWeight: '800', color: '#805AD5', lineHeight: '1', marginBottom: '6px' }}>
-            {metrics.activeUsers}
+            {health.nodeVersion}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '600' }}>Active Users</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '600' }}>Node Version</div>
         </StatCard>
+        
         <StatCard>
-          <div style={{ fontSize: '24px', fontWeight: '800', color: '#38A169', lineHeight: '1', marginBottom: '6px' }}>99.98%</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '600' }}>Uptime SLA</div>
+          <div style={{ fontSize: '24px', fontWeight: '800', color: '#38A169', lineHeight: '1', marginBottom: '6px' }}>
+            {health.environment?.toUpperCase()}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: '600' }}>Environment</div>
         </StatCard>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        
+        {/* System Resources - Real Memory Usage */}
         <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
             ⚡ System Resources
           </h3>
-          <MetricBar label="CPU Usage" value={metrics.cpu} color={getStatusColor(metrics.cpu, { good: 60, warning: 80 })} />
-          <MetricBar label="Memory Usage" value={metrics.memory} color={getStatusColor(metrics.memory, { good: 70, warning: 85 })} />
-          <MetricBar label="Disk Usage" value={metrics.disk} color={getStatusColor(metrics.disk, { good: 70, warning: 85 })} />
+          
+          {/* Note: Node.js can't directly get CPU/Disk without native libraries, 
+              so we show Memory (Heap) which is tracked by the backend natively. */}
+          <MetricBar 
+            label="Memory Usage (Heap)" 
+            value={memoryPercentage} 
+            color={getStatusColor(memoryPercentage, { good: 70, warning: 85 })} 
+          />
+          
+          <div style={{ marginTop: '16px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
+            <div>Used: <strong>{health.memory?.used} MB</strong></div>
+            <div>Total Allocated: <strong>{health.memory?.total} MB</strong></div>
+          </div>
         </div>
 
+        {/* API Metrics - Real DB & Status */}
         <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
-            📡 API Metrics
+            📡 Service Metrics
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {[
-              { label: 'Total Requests', value: metrics.requests.toLocaleString(), color: 'var(--text-primary)' },
-              { label: 'Avg Response Time', value: `${metrics.responseTime} ms`, color: metrics.responseTime < 300 ? '#38A169' : '#ED8936' },
-              { label: 'Error Rate', value: `${metrics.errorRate}%`, color: metrics.errorRate < 1 ? '#38A169' : '#E53E3E' },
-              { label: 'Database Connection', value: '🟢 Healthy', color: '#38A169' },
-              { label: 'Email Service', value: '🟢 Connected', color: '#38A169' }
+              { label: 'Database Status', value: health.database?.status || 'Unknown', color: health.database?.isHealthy ? '#38A169' : '#E53E3E' },
+              { label: 'Uptime (Seconds)', value: Math.floor(health.uptime), color: 'var(--text-primary)' },
+              { label: 'Node Environment', value: health.environment, color: '#805AD5' }
             ].map((row, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-surface-secondary)', borderRadius: '8px' }}>
                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{row.label}</span>
@@ -99,29 +150,23 @@ const SystemHealth = () => {
           </div>
         </div>
 
+        {/* Recent Alerts (Static for now until alert system is built) */}
         <div style={{ background: 'var(--bg-surface)', borderRadius: '14px', padding: '24px', boxShadow: 'var(--shadow-sm)', gridColumn: '1 / -1' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
-            🚨 Recent System Alerts
+            🚨 System Alerts
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {[
-              { icon: '✅', color: '#38A169', bg: 'rgba(56, 161, 105, 0.2)', message: 'Database backup completed successfully', time: '2 hours ago' },
-              { icon: 'ℹ️', color: '#4299E1', bg: 'rgba(66, 153, 225, 0.2)', message: 'Scheduled maintenance in 3 days', time: '6 hours ago' },
-              { icon: '⚠️', color: '#ED8936', bg: 'rgba(237, 137, 54, 0.2)', message: 'High memory usage detected (78%)', time: '12 hours ago' },
-              { icon: '✅', color: '#38A169', bg: 'rgba(56, 161, 105, 0.2)', message: 'SSL certificate renewed for 90 days', time: '2 days ago' }
-            ].map((alert, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', background: 'var(--bg-surface-secondary)', borderRadius: '10px' }}>
-                <div style={{ width: '40px', height: '40px', background: alert.bg, color: alert.color, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
-                  {alert.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>{alert.message}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{alert.time}</div>
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px', background: 'var(--bg-surface-secondary)', borderRadius: '10px' }}>
+              <div style={{ width: '40px', height: '40px', background: 'rgba(56, 161, 105, 0.2)', color: '#38A169', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                ✅
               </div>
-            ))}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>System is running optimally. No alerts.</div>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   )

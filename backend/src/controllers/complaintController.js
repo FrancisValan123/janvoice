@@ -3,6 +3,7 @@
    =================================== */
 
 const Complaint = require('../models/Complaint')
+const AuditLog = require('../models/AuditLog') // ✅ Added AuditLog
 const { HTTP_STATUS, PRIORITY_SLA_HOURS } = require('../config/constants')
 const { calculatePriority } = require('../utils/priorityHelper')
 
@@ -80,7 +81,6 @@ exports.createComplaint = async (req, res) => {
 
     const userId = req.user._id || req.user.id
 
-    // ✅ AUTO-ROUTE TO DEPARTMENT
     const department = CATEGORY_DEPARTMENT_MAP[category] || 'General'
 
     const complaint = await Complaint.create({
@@ -91,7 +91,7 @@ exports.createComplaint = async (req, res) => {
       priority,
       status: 'pending',
       citizen: userId,
-      department, // ✅ Saving the department
+      department,
       location,
       affectedPeople,
       evidence,
@@ -107,6 +107,17 @@ exports.createComplaint = async (req, res) => {
     })
 
     await complaint.populate('citizen', 'name email phone')
+
+    // ✅ ADD AUDIT LOG: Complaint Created
+    await AuditLog.create({
+      user: userId,
+      action: 'CREATE_COMPLAINT',
+      category: 'complaint',
+      severity: priority === 'emergency' ? 'danger' : 'info',
+      description: `Submitted complaint ${complaintId} (${priority} priority)`,
+      targetId: complaint._id,
+      ip: req.ip || req.connection.remoteAddress
+    })
 
     res.status(HTTP_STATUS.CREATED).json({
       success: true,
@@ -124,7 +135,6 @@ exports.createComplaint = async (req, res) => {
 
 // ===================================
 // GET ALL COMPLAINTS
-// (Filtered by department for Department Admins)
 // ===================================
 exports.getAllComplaints = async (req, res) => {
   try {
@@ -134,14 +144,13 @@ exports.getAllComplaints = async (req, res) => {
       category,
       search,
       page = 1,
-      limit = 100, // Increased default limit so dashboard can fetch more
+      limit = 100,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query
 
     const query = {}
 
-    // ✅ RESTRICT DEPARTMENT ADMINS
     if (req.user.role === 'department_admin') {
       query.department = req.user.department
     }
@@ -299,9 +308,12 @@ exports.getComplaintById = async (req, res) => {
       })
     }
 
+    const responseData = complaint.toObject()
+    responseData.feedback = complaint.feedback || null
+
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      complaint
+      complaint: responseData
     })
   } catch (error) {
     console.error('Get complaint error:', error)
@@ -397,8 +409,7 @@ exports.getAssignedComplaints = async (req, res) => {
 }
 
 // ===================================
-// ASSIGN COMPLAINT (NEW)
-// PUT /api/complaints/:id/assign
+// ASSIGN COMPLAINT
 // ===================================
 exports.assignComplaint = async (req, res) => {
   try {
@@ -419,14 +430,12 @@ exports.assignComplaint = async (req, res) => {
       })
     }
 
-    // Update assignment
     complaint.assignedTo = assignedTo
     complaint.assignedBy = req.user._id || req.user.id
     complaint.assignedAt = new Date()
     complaint.status = 'assigned'
     if (department) complaint.department = department
 
-    // Log it
     complaint.statusHistory.push({
       status: 'assigned',
       note: note || `Case assigned to officer`,
@@ -436,6 +445,18 @@ exports.assignComplaint = async (req, res) => {
 
     await complaint.save()
     await complaint.populate('assignedTo', 'name email phone')
+
+    // ✅ ADD AUDIT LOG: Assigned
+    await AuditLog.create({
+      user: req.user._id || req.user.id,
+      action: 'ASSIGN_COMPLAINT',
+      category: 'complaint',
+      severity: 'info',
+      description: `Assigned complaint ${complaint.complaintId} to ${complaint.assignedTo.name}`,
+      targetId: complaint._id,
+      targetUser: assignedTo,
+      ip: req.ip || req.connection.remoteAddress
+    })
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -495,7 +516,8 @@ exports.updateStatus = async (req, res) => {
 
     const isAssignedOfficer =
       complaint.assignedTo && complaint.assignedTo.toString() === userId
-    const isAdmin = ['system_admin', 'department_admin'].includes(req.user.role)
+      
+    const isAdmin = ['system_admin', 'department_admin', 'higher_authority'].includes(req.user.role)
 
     if (!isAssignedOfficer && !isAdmin) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
@@ -504,6 +526,7 @@ exports.updateStatus = async (req, res) => {
       })
     }
 
+    const oldStatus = complaint.status
     complaint.status = status
 
     if (status === 'resolved') {
@@ -519,6 +542,17 @@ exports.updateStatus = async (req, res) => {
 
     await complaint.save()
     await complaint.populate('citizen', 'name email')
+
+    // ✅ ADD AUDIT LOG: Status Updated
+    await AuditLog.create({
+      user: req.user._id || req.user.id,
+      action: 'UPDATE_COMPLAINT_STATUS',
+      category: 'complaint',
+      severity: status === 'resolved' ? 'success' : 'info',
+      description: `Updated ${complaint.complaintId} status from ${oldStatus} to ${status}`,
+      targetId: complaint._id,
+      ip: req.ip || req.connection.remoteAddress
+    })
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -741,6 +775,17 @@ exports.getOfficerStats = async (req, res) => {
         })
       ])
 
+    const ratedComplaints = await Complaint.find({
+      assignedTo: officerId,
+      'feedback.rating': { $exists: true, $ne: null }
+    }).select('feedback.rating')
+
+    let avgRating = 0
+    if (ratedComplaints.length > 0) {
+      const totalRating = ratedComplaints.reduce((sum, c) => sum + c.feedback.rating, 0)
+      avgRating = (totalRating / ratedComplaints.length).toFixed(1)
+    }
+
     res.status(HTTP_STATUS.OK).json({
       success: true,
       stats: {
@@ -749,7 +794,8 @@ exports.getOfficerStats = async (req, res) => {
         pending,
         emergency,
         resolvedToday,
-        resolutionRate: total > 0 ? Math.round((resolved / total) * 100) : 0
+        resolutionRate: total > 0 ? Math.round((resolved / total) * 100) : 0,
+        avgRating: parseFloat(avgRating)
       }
     })
   } catch (error) {
@@ -777,27 +823,38 @@ exports.deleteComplaint = async (req, res) => {
     const userId = (req.user._id || req.user.id).toString()
 
     const isOwner = complaint.citizen.toString() === userId
-    const isAdmin = req.user.role === 'system_admin'
+    const isSystemAdmin = req.user.role === 'system_admin'
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isSystemAdmin) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         success: false,
-        message: 'Not authorized'
+        message: 'Not authorized to delete this complaint'
       })
     }
 
-    if (complaint.status === 'resolved') {
+    if (complaint.status === 'resolved' && !isSystemAdmin) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'Cannot delete a resolved complaint'
       })
     }
 
+    // ✅ ADD AUDIT LOG: Complaint Deleted
+    await AuditLog.create({
+      user: req.user._id || req.user.id,
+      action: 'DELETE_COMPLAINT',
+      category: 'complaint',
+      severity: 'danger',
+      description: `Deleted complaint ${complaint.complaintId} (${complaint.title})`,
+      targetId: complaint._id,
+      ip: req.ip || req.connection.remoteAddress
+    })
+
     await complaint.deleteOne()
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      message: 'Complaint deleted'
+      message: 'Complaint deleted successfully'
     })
   } catch (error) {
     console.error('Delete complaint error:', error)

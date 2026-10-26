@@ -4,6 +4,7 @@
 
 const Complaint = require('../models/Complaint')
 const User = require('../models/User')
+const Department = require('../models/Department')
 const { HTTP_STATUS } = require('../config/constants')
 
 exports.getDashboard = async (req, res) => {
@@ -137,7 +138,11 @@ exports.getOverdueCases = async (req, res) => {
 
 exports.getDepartmentComparison = async (req, res) => {
   try {
-    const departments = await Complaint.aggregate([
+    // 1. Fetch all departments from the database
+    const allDepartments = await Department.find().sort({ name: 1 })
+
+    // 2. Fetch complaint stats
+    const complaintStats = await Complaint.aggregate([
       {
         $group: {
           _id: '$department',
@@ -178,38 +183,38 @@ exports.getDepartmentComparison = async (req, res) => {
           },
           avgResolutionMs: { $avg: { $subtract: ['$resolvedAt', '$createdAt'] } }
         }
-      },
-      {
-        $project: {
-          // ✅ Crucial: The frontend expects `name`, not `_id`
-          name: '$_id',
-          total: 1,
-          resolved: 1,
-          pending: 1,
-          overdue: 1,
-          escalated: 1,
-          avgDays: {
-            $round: [{ $divide: ['$avgResolutionMs', 1000 * 60 * 60 * 24] }, 1]
-          },
-          sla: {
-            $cond: [
-              { $gt: ['$total', 0] },
-              {
-                $round: [
-                  {
-                    $multiply: [{ $divide: ['$resolved', '$total'] }, 100]
-                  },
-                  0
-                ]
-              },
-              0
-            ]
-          },
-          _id: 0
-        }
-      },
-      { $sort: { total: -1 } }
+      }
     ])
+
+    // 3. Create a lookup map for quick access
+    const statsMap = complaintStats.reduce((acc, stat) => {
+      acc[stat._id] = stat
+      return acc
+    }, {})
+
+    // 4. Merge departments with their stats (defaulting to 0 if no complaints)
+    const departments = allDepartments.map(dept => {
+      const stats = statsMap[dept.name] || {}
+      const total = stats.total || 0
+      const resolved = stats.resolved || 0
+
+      return {
+        name: dept.name,
+        code: dept.code || dept.name.substring(0, 2).toUpperCase(),
+        total: total,
+        resolved: resolved,
+        pending: stats.pending || 0,
+        overdue: stats.overdue || 0,
+        escalated: stats.escalated || 0,
+        avgDays: stats.avgResolutionMs 
+          ? Math.round((stats.avgResolutionMs / (1000 * 60 * 60 * 24)) * 10) / 10 
+          : 0,
+        sla: total > 0 ? Math.round((resolved / total) * 100) : 0
+      }
+    })
+
+    // Sort by total complaints (most active first)
+    departments.sort((a, b) => b.total - a.total)
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -276,14 +281,14 @@ exports.getMonthlyStatistics = async (req, res) => {
   }
 }
 
+// ✅ UPDATED: Now calculates REAL average ratings for each department
 exports.getPerformanceMonitor = async (req, res) => {
   try {
-    const officers = await User.find({ role: 'officer', isActive: true }).select(
-      'name email department'
-    )
-
+    // 1. Fetch all active officers
+    const officers = await User.find({ role: 'officer', isActive: true }).select('name email department')
     const officerIds = officers.map((o) => o._id)
 
+    // 2. Aggregate complaint performance including feedback ratings
     const performance = await Complaint.aggregate([
       { $match: { assignedTo: { $in: officerIds } } },
       {
@@ -293,7 +298,18 @@ exports.getPerformanceMonitor = async (req, res) => {
           resolved: {
             $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
           },
-          avgMs: { $avg: { $subtract: ['$resolvedAt', '$createdAt'] } }
+          pending: {
+            $sum: {
+              $cond: [
+                { $in: ['$status', ['pending', 'assigned', 'investigating', 'in-progress']] },
+                1,
+                0
+              ]
+            }
+          },
+          avgMs: { $avg: { $subtract: ['$resolvedAt', '$createdAt'] } },
+          // ✅ Calculate the real average rating from the feedback object
+          avgRating: { $avg: '$feedback.rating' }
         }
       }
     ])
@@ -302,30 +318,75 @@ exports.getPerformanceMonitor = async (req, res) => {
       acc[p._id.toString()] = {
         total: p.total,
         resolved: p.resolved,
-        avgDays:
-          p.avgMs != null
-            ? Math.round((p.avgMs / (1000 * 60 * 60 * 24)) * 10) / 10
-            : 0,
-        sla: p.total > 0 ? Math.round((p.resolved / p.total) * 100) : 0
+        pending: p.pending,
+        avgDays: p.avgMs != null ? Math.round((p.avgMs / (1000 * 60 * 60 * 24)) * 10) / 10 : 0,
+        sla: p.total > 0 ? Math.round((p.resolved / p.total) * 100) : 0,
+        rating: p.avgRating ? parseFloat(p.avgRating.toFixed(1)) : 0
       }
       return acc
     }, {})
 
-    const officersWithPerf = officers.map((o) => ({
-      ...o.toObject(),
-      ...(perfMap[o._id.toString()] || {
-        total: 0,
-        resolved: 0,
-        avgDays: 0,
-        sla: 0
-      })
-    }))
+    // 3. Group the performance by Department
+    const deptMap = {}
+    officers.forEach(o => {
+      const deptName = o.department || 'Unknown'
+      const perf = perfMap[o._id.toString()] || { total: 0, resolved: 0, pending: 0, sla: 0, avgDays: 0, rating: 0 }
 
-    officersWithPerf.sort((a, b) => b.sla - a.sla)
+      if (!deptMap[deptName]) {
+        deptMap[deptName] = { 
+          name: deptName, 
+          total: 0, 
+          resolved: 0, 
+          pending: 0, 
+          avgDaysSum: 0, 
+          avgDaysCount: 0,
+          ratingSum: 0, 
+          ratingCount: 0 
+        }
+      }
+      
+      // Combine totals for the department
+      deptMap[deptName].total += perf.total
+      deptMap[deptName].resolved += perf.resolved
+      deptMap[deptName].pending += perf.pending
+      
+      // Average out the avgDays
+      if (perf.avgDays > 0) {
+        deptMap[deptName].avgDaysSum += perf.avgDays
+        deptMap[deptName].avgDaysCount += 1
+      }
+
+      // Average out the ratings (only if the officer actually has a rating)
+      if (perf.rating > 0) {
+        deptMap[deptName].ratingSum += perf.rating
+        deptMap[deptName].ratingCount += 1
+      }
+    })
+
+    // 4. Finalize department statistics
+    const departmentPerformance = Object.values(deptMap).map(d => {
+      const sla = d.total > 0 ? Math.round((d.resolved / d.total) * 100) : 0
+      const avgDays = d.avgDaysCount > 0 ? parseFloat((d.avgDaysSum / d.avgDaysCount).toFixed(1)) : 0
+      const avgRating = d.ratingCount > 0 ? parseFloat((d.ratingSum / d.ratingCount).toFixed(1)) : 0
+      
+      return {
+        name: d.name,
+        total: d.total,
+        resolved: d.resolved,
+        pending: d.pending,
+        avgDays: avgDays,
+        sla: sla,
+        rating: avgRating // ✅ Now it sends the real rating
+      }
+    })
+
+    // Sort by SLA descending (highest first)
+    departmentPerformance.sort((a, b) => b.sla - a.sla)
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      officers: officersWithPerf
+      // Sending it as "officers" to match the frontend's expected property name
+      officers: departmentPerformance
     })
   } catch (error) {
     console.error('Performance monitor error:', error)
@@ -336,10 +397,34 @@ exports.getPerformanceMonitor = async (req, res) => {
   }
 }
 
+// ✅ FIXED: Now accepts a `period` query parameter and filters by date
 exports.getActionTakenReport = async (req, res) => {
   try {
+    const { period = 'month' } = req.query // Get the period from the frontend
+
+    // Calculate the start date based on the selected period
+    const now = new Date()
+    let startDate = new Date()
+    switch (period) {
+      case 'week':
+        startDate.setDate(now.getDate() - 7)
+        break
+      case 'month':
+        startDate.setMonth(now.getMonth() - 1)
+        break
+      case 'quarter':
+        startDate.setMonth(now.getMonth() - 3)
+        break
+      case 'year':
+        startDate.setFullYear(now.getFullYear() - 1)
+        break
+      default:
+        startDate.setMonth(now.getMonth() - 1) // Default to 1 month
+    }
+
     const complaints = await Complaint.find({
-      'statusHistory.0': { $exists: true }
+      'statusHistory.0': { $exists: true },
+      updatedAt: { $gte: startDate } // Apply the date filter
     })
       .populate('citizen', 'name')
       .populate('assignedTo', 'name')
@@ -355,7 +440,7 @@ exports.getActionTakenReport = async (req, res) => {
         priority: c.priority,
         status: c.status,
         action: lastAction?.note || 'No action recorded',
-        date: c.updatedAt
+        date: c.updatedAt // Use updatedAt for when the action was taken
       }
     })
 

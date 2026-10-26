@@ -16,6 +16,9 @@ const adminRoutes = require('./adminRoutes')
 const analyticsRoutes = require('./analyticsRoutes')
 const notificationRoutes = require('./notificationRoutes')
 
+// ✅ NEW IMPORT: Resolution Reports
+const reportRoutes = require('./reportRoutes')
+
 // ===================================
 // MOUNT ROUTES
 // ===================================
@@ -27,6 +30,9 @@ router.use('/authority', higherAuthRoutes)
 router.use('/admin', adminRoutes)
 router.use('/analytics', analyticsRoutes)
 router.use('/notifications', notificationRoutes)
+
+// ✅ NEW MOUNT: Reports
+router.use('/reports', reportRoutes)
 
 // ===================================
 // API INFO
@@ -44,7 +50,8 @@ router.get('/', (req, res) => {
       authority: '/api/authority',
       admin: '/api/admin',
       analytics: '/api/analytics',
-      notifications: '/api/notifications'
+      notifications: '/api/notifications',
+      reports: '/api/reports'
     }
   })
 })

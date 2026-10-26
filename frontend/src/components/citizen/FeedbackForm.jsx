@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api'
 import './FeedbackForm.css'
 
 const FeedbackForm = () => {
-  const { id } = useParams()
+  // ✅ FIXED: Extract 'complaintId' as defined in your App.jsx routes
+  const { complaintId } = useParams()
   const navigate = useNavigate()
 
   const menuItems = [
@@ -38,17 +40,29 @@ const FeedbackForm = () => {
     )
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (rating === 0) {
       alert('Please provide a rating')
       return
     }
+
     setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
+    try {
+      // ✅ FIXED: Use complaintId and POST to the correct route
+      await api.put(`/complaints/${complaintId}/feedback`, {
+        complaintId, // Sending it in the body as well to match controller logic
+        rating,
+        comment,
+        tags: selectedTags
+      })
       setSubmitted(true)
-    }, 1200)
+    } catch (err) {
+      console.error('Feedback submit error:', err)
+      alert(err.response?.data?.message || 'Failed to submit feedback. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
@@ -83,7 +97,8 @@ const FeedbackForm = () => {
           <div className="feedback-header">
             <div className="feedback-icon-large">⭐</div>
             <h2>Rate Your Experience</h2>
-            <p>Help us improve by sharing your feedback for complaint <strong>{id}</strong></p>
+            {/* ✅ FIXED: Display complaintId */}
+            <p>Help us improve by sharing your feedback for complaint <strong>{complaintId}</strong></p>
           </div>
 
           <form onSubmit={handleSubmit} className="feedback-form">

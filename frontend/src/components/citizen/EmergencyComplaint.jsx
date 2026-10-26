@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../common/DashboardLayout'
+import { api } from '../../services/api' // ✅ Import the API service
 
 const EmergencyComplaint = () => {
   const navigate = useNavigate()
@@ -30,20 +31,64 @@ const EmergencyComplaint = () => {
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [contact, setContact] = useState('')
+  
+  // State for submission process
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [complaintId, setComplaintId] = useState('')
 
-  const handleSubmit = (e) => {
+  // ✅ REAL SUBMISSION TO BACKEND
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validation
     if (!type || !description.trim() || !location.trim()) {
-      alert('Please fill all required fields')
+      setError('Please fill all required fields (Type, Description, Location)')
       return
     }
+
     setLoading(true)
-    setTimeout(() => {
+    setError('')
+
+    try {
+      // Find the label for the selected type to use as a category
+      const selectedType = emergencyTypes.find(t => t.id === type)
+      
+      // Prepare the payload matching your backend's expected format
+      const payload = {
+        title: `🚨 EMERGENCY: ${selectedType?.label || 'Urgent Issue'}`,
+        description: `EMERGENCY TYPE: ${type.toUpperCase()}\n\n${description}`,
+        category: 'other', // Emergency complaints usually don't have a specific civic category
+        priority: 'emergency', // Force the priority to emergency
+        location: {
+          address: location,
+          city: 'Chennai', // Default or try to parse
+          state: 'Tamil Nadu',
+          pincode: '600001'
+        },
+        affectedPeople: 10, // Assume a high number for emergencies
+        evidence: [] 
+      }
+
+      // Send to backend
+      const response = await api.post('/complaints', payload)
+
+      if (response.data.success) {
+        setComplaintId(response.data.complaint.complaintId)
+        setSubmitted(true)
+      } else {
+        setError(response.data.message || 'Failed to submit emergency report.')
+      }
+    } catch (err) {
+      console.error('Emergency submission error:', err)
+      setError(
+        err.response?.data?.message || 
+        'Failed to connect to the server. Please call 112 immediately if this is life-threatening.'
+      )
+    } finally {
       setLoading(false)
-      setSubmitted(true)
-    }, 1500)
+    }
   }
 
   if (submitted) {
@@ -54,9 +99,15 @@ const EmergencyComplaint = () => {
           <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1a202c', marginBottom: '12px' }}>
             Emergency Reported!
           </h2>
-          <p style={{ fontSize: '15px', color: '#4a5568', marginBottom: '24px' }}>
-            Your emergency has been reported to the authorities and emergency services.
+          <p style={{ fontSize: '15px', color: '#4a5568', marginBottom: '16px' }}>
+            Your emergency has been logged in the system and sent to the relevant authorities.
           </p>
+          
+          <div style={{ background: '#F0FFF4', border: '2px dashed #38A169', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+            <div style={{ fontSize: '12px', color: '#276749', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>Reference ID</div>
+            <div style={{ fontSize: '20px', fontWeight: '800', color: '#2F855A', fontFamily: 'monospace' }}>{complaintId}</div>
+          </div>
+
           <div style={{ background: 'linear-gradient(135deg, #FED7D7, #FC8181)', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'left' }}>
             <div style={{ fontSize: '13px', color: '#742A2A', fontWeight: '700', marginBottom: '10px' }}>
               ⚠️ IMPORTANT — While waiting for help:
@@ -118,6 +169,12 @@ const EmergencyComplaint = () => {
           <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1a202c', marginBottom: '24px' }}>
             🚨 Report Emergency
           </h3>
+
+          {error && (
+            <div style={{ background: 'rgba(229, 62, 62, 0.1)', color: '#C53030', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>
+              ⚠️ {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Emergency Type */}

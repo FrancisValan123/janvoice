@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom' // ✅ Import useNavigate
 import DashboardLayout from '../common/DashboardLayout'
 import { api } from '../../services/api'
 
 const MonitorDeadlines = () => {
+  const navigate = useNavigate() // ✅ Initialize navigate
+
   const menuItems = [
     { icon: '📊', label: 'Dashboard', path: '/department/dashboard' },
     { icon: '👥', label: 'Assign Officers', path: '/department/assign' },
@@ -113,7 +116,7 @@ const MonitorDeadlines = () => {
     <DashboardLayout role="department_admin" menuItems={menuItems} title="Monitor Deadlines">
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* ✅ ADDED: Beautiful Gradient Banner */}
+        {/* Banner */}
         <div style={{ background: 'linear-gradient(135deg, #2C5282 0%, #3182CE 60%, #63B3ED 100%)', borderRadius: '20px', padding: '32px', color: 'white', marginBottom: '24px', boxShadow: '0 12px 32px rgba(49, 130, 206, 0.25)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', color: '#FFFFFF', textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
@@ -167,7 +170,6 @@ const MonitorDeadlines = () => {
         {/* Table */}
         <div style={{ background: 'var(--bg-surface)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-sm)', overflowX: 'auto', minHeight: '400px' }}>
           {filtered.length === 0 ? (
-            /* ✅ ADDED: Nice Empty State */
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
               <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
               <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>No Cases Found</h3>
@@ -211,7 +213,13 @@ const MonitorDeadlines = () => {
                         </span>
                       </td>
                       <td style={{ padding: '16px 12px' }}>
-                         <button style={{ padding: '6px 12px', background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-light)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', color: '#FF6B35', fontWeight: '700' }}>View</button>
+                        {/* ✅ FIXED: Added onClick handler to navigate */}
+                        <button 
+                          onClick={() => navigate(`/department/complaints/${c._id}`)}
+                          style={{ padding: '6px 12px', background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-light)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', color: '#FF6B35', fontWeight: '700', fontFamily: 'inherit' }}
+                        >
+                          View
+                        </button>
                       </td>
                     </tr>
                   )
