@@ -51,7 +51,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: mode === 'development',
-      minify: 'esbuild', // 'esbuild' (fast) or 'terser' (smaller)
+      minify: 'oxc', // 'esbuild' (fast) or 'terser' (smaller)
 
       // Warn when chunk exceeds this size (in KB)
       chunkSizeWarningLimit: 1000,
