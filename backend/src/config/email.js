@@ -1,42 +1,20 @@
 /* ===================================
-   JANVOICE — EMAIL CONFIGURATION
+   JANVOICE — EMAIL CONFIGURATION (RESEND)
    =================================== */
 
-const nodemailer = require('nodemailer')
+const { Resend } = require('resend')
 
-let transporter = null
+// Initialize Resend with the API Key from environment variables
+const resend = new Resend(process.env.RESEND_API_KEY)
 
-const getTransporter = () => {
-  if (transporter) return transporter
-
-  transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: process.env.EMAIL_PORT === '465',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    },
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-    tls: {
-      rejectUnauthorized: false,
-      minVersion: 'TLSv1.2'
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000
-  })
-
-  return transporter
-}
-
+// Placeholder for compatibility with server.js if it calls verifyEmailConnection
 const verifyEmailConnection = async () => {
   try {
-    const mailer = getTransporter()
-    await mailer.verify()
-    console.log('✅ Email service ready')
+    if (!process.env.RESEND_API_KEY) {
+      console.warn('⚠️  RESEND_API_KEY is missing. Emails will fail.')
+      return false
+    }
+    console.log('✅ Resend Email service initialized')
     return true
   } catch (error) {
     console.error('❌ Email service error:', error.message)
@@ -46,20 +24,27 @@ const verifyEmailConnection = async () => {
 
 const sendEmail = async ({ to, subject, html, text, attachments = [] }) => {
   try {
-    const mailer = getTransporter()
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not set in environment variables.')
+    }
 
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || `JanVoice <${process.env.EMAIL_USER}>`,
-      to,
+    const { data, error } = await resend.emails.send({
+      // You MUST use a verified domain, or use onboarding@resend.dev for testing
+      from: process.env.EMAIL_FROM || 'JanVoice <onboarding@resend.dev>',
+      to: [to],
       subject,
       html,
       text: text || html?.replace(/<[^>]*>/g, ''),
-      attachments
+      attachments: attachments.length > 0 ? attachments : undefined
+    })
+
+    if (error) {
+      console.error('❌ Resend Email Error:', error)
+      throw new Error(error.message)
     }
 
-    const info = await mailer.sendMail(mailOptions)
-    console.log(`📧 Email sent: ${info.messageId} to ${to}`)
-    return { success: true, messageId: info.messageId }
+    console.log(`📧 Email sent via Resend: ${data.id} to ${to}`)
+    return { success: true, messageId: data.id }
   } catch (error) {
     console.error('❌ Email send failed:', error.message)
     throw error
@@ -146,7 +131,6 @@ const emailTemplates = {
 }
 
 module.exports = {
-  getTransporter,
   verifyEmailConnection,
   sendEmail,
   emailTemplates
